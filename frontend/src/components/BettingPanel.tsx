@@ -24,6 +24,7 @@ interface BettingPanelProps {
   autoPlay?: boolean
   onAutoPlayChange?: (enabled: boolean) => void
   lastBetAmount?: number
+  autoPlayCountdown?: number
 }
 
 export function BettingPanel({
@@ -39,7 +40,8 @@ export function BettingPanel({
   sessionStats,
   autoPlay = false,
   onAutoPlayChange,
-  lastBetAmount = 0
+  lastBetAmount = 0,
+  autoPlayCountdown = 0
 }: BettingPanelProps) {
   const [betAmount, setBetAmount] = useState(minBet)
 
@@ -179,13 +181,22 @@ export function BettingPanel({
         </div>
       )}
 
-      {gamePhase === 'game-over' && (
+      {gamePhase === 'game-over' && !autoPlay && (
         <button
           className="btn btn-primary new-game-btn"
           onClick={onNewGame}
         >
           New Game
         </button>
+      )}
+
+      {gamePhase === 'game-over' && autoPlay && lastBetAmount > 0 && (
+        <div className="auto-play-message">
+          {autoPlayCountdown > 0
+            ? `Next hand in ${autoPlayCountdown}...`
+            : 'Next hand starting automatically...'
+          }
+        </div>
       )}
     </div>
   )

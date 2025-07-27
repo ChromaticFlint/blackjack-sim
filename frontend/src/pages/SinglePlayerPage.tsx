@@ -46,6 +46,7 @@ export function SinglePlayerPage() {
   const [gameMessage, setGameMessage] = useState<string>('')
   const [autoPlay, setAutoPlay] = useState(false)
   const [lastBetAmount, setLastBetAmount] = useState(0)
+  const [autoPlayCountdown, setAutoPlayCountdown] = useState(0)
   // const [showStrategy, setShowStrategy] = useState(true)
   const [sessionStats, setSessionStats] = useState(() => {
     const saved = localStorage.getItem('blackjack-session')
@@ -298,12 +299,50 @@ export function SinglePlayerPage() {
       gamePhase: 'game-over'
     }))
 
-    // Auto-play: automatically start next game if enabled
+    // Auto-play: automatically start next hand if enabled
     if (autoPlay && lastBetAmount > 0 && newChips >= lastBetAmount) {
+      // Start countdown
+      setAutoPlayCountdown(2)
+      const countdownInterval = setInterval(() => {
+        setAutoPlayCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
       setTimeout(() => {
-        newGame()
-        setTimeout(() => placeBet(lastBetAmount), 100)
-      }, 2000) // Wait 2 seconds to show results, then auto-start next game
+        // Reset game state and immediately place bet + deal
+        const deck = BlackjackEngine.createDeck()
+
+        setGameState(prev => ({
+          ...prev,
+          players: prev.players.map(player => ({
+            ...player,
+            hand: BlackjackEngine.createHand(),
+            bet: 0,
+            hasDoubledDown: false,
+            hasStood: false
+          })),
+          dealer: {
+            ...prev.dealer,
+            hand: BlackjackEngine.createHand()
+          },
+          deck,
+          gamePhase: 'betting'
+        }))
+
+        setGameMessage('')
+        setOdds(null)
+        setAutoPlayCountdown(0)
+
+        // Immediately place bet and deal next hand
+        setTimeout(() => {
+          placeBet(lastBetAmount)
+        }, 100)
+      }, 2000) // Wait 2 seconds to show results, then auto-start next hand
     } else if (autoPlay && newChips < lastBetAmount) {
       // Disable auto-play if not enough chips
       setAutoPlay(false)
@@ -369,6 +408,7 @@ export function SinglePlayerPage() {
               autoPlay={autoPlay}
               onAutoPlayChange={setAutoPlay}
               lastBetAmount={lastBetAmount}
+              autoPlayCountdown={autoPlayCountdown}
             />
           </div>
 
