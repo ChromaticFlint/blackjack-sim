@@ -110,18 +110,23 @@ export function SinglePlayerPage() {
   const placeBet = (amount: number) => {
     if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) return
 
-    console.log('Placing bet:', amount)
+    console.log('Placing bet:', amount, 'Current chips:', currentPlayer.chips)
     setLastBetAmount(amount) // Track the last bet for auto-play
 
-    setGameState(prev => ({
-      ...prev,
-      players: prev.players.map(player =>
-        player.id === currentPlayer.id
-          ? { ...player, bet: amount, chips: player.chips - amount }
-          : player
-      ),
-      gamePhase: 'dealing'
-    }))
+    setGameState(prev => {
+      const updatedState = {
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? { ...player, bet: amount, chips: player.chips - amount }
+            : player
+        ),
+        gamePhase: 'dealing' as const
+      }
+
+      console.log('After bet placement - New chips:', updatedState.players[0].chips)
+      return updatedState
+    })
 
     // Auto-deal after betting
     setTimeout(() => dealInitialCards(), 500)
@@ -129,8 +134,11 @@ export function SinglePlayerPage() {
 
   const dealInitialCards = () => {
     let newDeck = [...gameState.deck]
-    let newPlayer = { ...currentPlayer }
+    // Use the current player from gameState to ensure we have the latest state with bet deducted
+    let newPlayer = { ...gameState.players[gameState.currentPlayerIndex] }
     let newDealer = { ...gameState.dealer }
+
+    console.log('Deal Initial Cards - Player chips:', newPlayer.chips, 'bet:', newPlayer.bet)
 
     // Deal two cards to player
     const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
