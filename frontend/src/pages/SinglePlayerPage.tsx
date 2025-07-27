@@ -203,7 +203,12 @@ export function SinglePlayerPage() {
     if (gameState.gamePhase !== 'playing') return
 
     const result = BlackjackEngine.dealCard(gameState.deck, currentPlayer.hand)
-    
+
+    console.log('=== HIT RESULT ===')
+    console.log('New hand value:', result.newHand.value)
+    console.log('New hand isBusted:', result.newHand.isBusted)
+    console.log('Cards:', result.newHand.cards.map(c => c.rank))
+
     setGameState(prev => ({
       ...prev,
       players: prev.players.map(player =>
@@ -215,7 +220,10 @@ export function SinglePlayerPage() {
     }))
 
     if (result.newHand.isBusted) {
+      console.log('Player busted! Ending game...')
       setTimeout(() => endGame(gameState.dealer), 1000)
+    } else {
+      console.log('Player did not bust, continuing...')
     }
   }
 
@@ -292,6 +300,7 @@ export function SinglePlayerPage() {
 
     // Debug logging
     console.log('=== GAME END DEBUG ===')
+    console.log('endGame called with finalDealer:', finalDealer ? 'YES' : 'NO')
     console.log('Player hand:', {
       cards: currentPlayer.hand.cards,
       value: currentPlayer.hand.value,
@@ -304,6 +313,14 @@ export function SinglePlayerPage() {
       isBlackjack: dealerToUse.hand.isBlackjack,
       isBusted: dealerToUse.hand.isBusted
     })
+
+    // Double-check bust calculation
+    const playerShouldBeBusted = currentPlayer.hand.value > 21
+    console.log('Player value > 21?', playerShouldBeBusted)
+    console.log('Player isBusted property:', currentPlayer.hand.isBusted)
+    if (playerShouldBeBusted !== currentPlayer.hand.isBusted) {
+      console.error('🚨 BUST DETECTION MISMATCH! Value > 21 but isBusted is wrong!')
+    }
 
     const payout = BlackjackEngine.calculatePayout(
       currentPlayer.bet,
