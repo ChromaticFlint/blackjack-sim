@@ -4,6 +4,10 @@ import cors from 'cors'
 const app = express()
 const PORT = process.env.PORT || 10000
 
+console.log('🚀 Starting Blackjack Backend...')
+console.log('📍 Port:', PORT)
+console.log('🌍 Environment:', process.env.NODE_ENV || 'development')
+
 // Middleware
 app.use(cors())
 app.use(express.json())
