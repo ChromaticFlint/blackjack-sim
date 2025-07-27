@@ -58,28 +58,28 @@ export function GameControlsPanel({
           <div className="stats-grid">
             <div className="stat-item">
               <span className="stat-label">Hands:</span>
-              <span className="stat-value">{sessionStats.handsPlayed}</span>
+              <span className="stat-value">{sessionStats.handsPlayed || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Won:</span>
-              <span className="stat-value text-green">{sessionStats.handsWon}</span>
+              <span className="stat-value text-green">{sessionStats.handsWon || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Lost:</span>
-              <span className="stat-value text-red">{sessionStats.handsLost}</span>
+              <span className="stat-value text-red">{sessionStats.handsLost || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Pushed:</span>
-              <span className="stat-value text-yellow">{sessionStats.handsPushed}</span>
+              <span className="stat-value text-yellow">{sessionStats.handsPushed || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Win Rate:</span>
-              <span className="stat-value">{sessionStats.winRate.toFixed(1)}%</span>
+              <span className="stat-value">{(sessionStats.winRate || 0).toFixed(1)}%</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Net:</span>
-              <span className={`stat-value ${sessionStats.netWinnings >= 0 ? 'text-green' : 'text-red'}`}>
-                {sessionStats.netWinnings >= 0 ? '+' : ''}${sessionStats.netWinnings}
+              <span className={`stat-value ${(sessionStats.netWinnings || 0) >= 0 ? 'text-green' : 'text-red'}`}>
+                {(sessionStats.netWinnings || 0) >= 0 ? '+' : ''}${sessionStats.netWinnings || 0}
               </span>
             </div>
           </div>

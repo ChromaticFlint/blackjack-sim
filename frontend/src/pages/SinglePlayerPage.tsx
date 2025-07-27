@@ -70,6 +70,7 @@ export function SinglePlayerPage() {
       handsPushed: 0,
       totalWagered: 0,
       netWinnings: 0,
+      winRate: 0,
       startingChips: parseInt(localStorage.getItem('blackjack-chips') || '1000')
     }
   })
@@ -286,14 +287,18 @@ export function SinglePlayerPage() {
     const newChips = currentPlayer.chips + payout
 
     // Update session stats
+    const handsPlayed = sessionStats.handsPlayed + 1
+    const handsWon = result === 'player' ? sessionStats.handsWon + 1 : sessionStats.handsWon
+
     const newStats = {
       ...sessionStats,
-      handsPlayed: sessionStats.handsPlayed + 1,
-      handsWon: result === 'player' ? sessionStats.handsWon + 1 : sessionStats.handsWon,
+      handsPlayed,
+      handsWon,
       handsLost: result === 'dealer' ? sessionStats.handsLost + 1 : sessionStats.handsLost,
       handsPushed: result === 'push' ? sessionStats.handsPushed + 1 : sessionStats.handsPushed,
       totalWagered: sessionStats.totalWagered + currentPlayer.bet,
-      netWinnings: sessionStats.netWinnings + (payout - currentPlayer.bet)
+      netWinnings: sessionStats.netWinnings + (payout - currentPlayer.bet),
+      winRate: handsPlayed > 0 ? (handsWon / handsPlayed) * 100 : 0
     }
 
     setSessionStats(newStats)
@@ -432,6 +437,7 @@ export function SinglePlayerPage() {
       handsPushed: 0,
       totalWagered: 0,
       netWinnings: 0,
+      winRate: 0,
       startingChips: currentPlayer.chips
     }
     setSessionStats(newStats)
