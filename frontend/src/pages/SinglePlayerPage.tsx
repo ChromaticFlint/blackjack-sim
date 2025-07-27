@@ -294,7 +294,17 @@ export function SinglePlayerPage() {
 
     // Check for blackjacks
     const playerHasBlackjack = currentPlayer.hand.isBlackjack
-    const dealerHasBlackjack = gameState.dealer.hand.isBlackjack
+    const dealerHasBlackjack = dealerToUse.hand.isBlackjack
+
+    // Debug logging
+    console.log('Blackjack Detection:', {
+      playerCards: currentPlayer.hand.cards.length,
+      playerValue: currentPlayer.hand.value,
+      playerHasBlackjack,
+      dealerCards: dealerToUse.hand.cards.length,
+      dealerValue: dealerToUse.hand.value,
+      dealerHasBlackjack
+    })
 
     const newStats = {
       ...sessionStats,
