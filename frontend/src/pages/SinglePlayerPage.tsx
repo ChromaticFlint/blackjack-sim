@@ -47,6 +47,18 @@ export function SinglePlayerPage() {
   const [autoPlay, setAutoPlay] = useState(false)
   const [lastBetAmount, setLastBetAmount] = useState(0)
   const [autoPlayCountdown, setAutoPlayCountdown] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   // const [showStrategy, setShowStrategy] = useState(true)
   const [sessionStats, setSessionStats] = useState(() => {
     const saved = localStorage.getItem('blackjack-session')
@@ -428,25 +440,43 @@ export function SinglePlayerPage() {
   return (
     <div className="single-player-page">
       <div className="game-layout">
-        <GameTable>
-          <div className="betting-section">
-            <BettingPanel
-              chips={currentPlayer.chips}
-              currentBet={currentPlayer.bet}
-              minBet={gameState.minBet}
-              maxBet={gameState.maxBet}
-              canBet={gameState.gamePhase === 'betting'}
-              onPlaceBet={placeBet}
-              onNewGame={newGame}
-              onResetSession={resetSession}
-              gamePhase={gameState.gamePhase}
-              sessionStats={sessionStats}
-              autoPlay={autoPlay}
-              onAutoPlayChange={setAutoPlay}
-              lastBetAmount={lastBetAmount}
-              autoPlayCountdown={autoPlayCountdown}
-            />
-          </div>
+        {isMobile ? (
+          // Mobile Layout: Betting panel at top, then game table
+          <>
+            <div className="mobile-betting-section">
+              <BettingPanel
+                chips={currentPlayer.chips}
+                currentBet={currentPlayer.bet}
+                minBet={gameState.minBet}
+                maxBet={gameState.maxBet}
+                canBet={gameState.gamePhase === 'betting'}
+                onPlaceBet={placeBet}
+                onNewGame={newGame}
+                onResetSession={resetSession}
+                gamePhase={gameState.gamePhase}
+                sessionStats={sessionStats}
+                autoPlay={autoPlay}
+                onAutoPlayChange={setAutoPlay}
+                lastBetAmount={lastBetAmount}
+                autoPlayCountdown={autoPlayCountdown}
+              />
+            </div>
+            <GameTable>
+              <DealerHand
+                hand={gameState.dealer.hand}
+                hideSecondCard={gameState.gamePhase === 'playing'}
+              />
+
+              <div className="game-center">
+                {gameMessage && (
+                  <div className="game-message">{gameMessage}</div>
+                )}
+              </div>
+
+              <PlayerHand
+                player={currentPlayer}
+                isActive={true}
+              />
 
           <DealerHand
             hand={gameState.dealer.hand}
@@ -464,20 +494,74 @@ export function SinglePlayerPage() {
             isActive={true}
           />
 
-          <GameControls
-            gamePhase={gameState.gamePhase}
-            canHit={gameState.gamePhase === 'playing' && !currentPlayer.hand.isBusted}
-            canStand={gameState.gamePhase === 'playing'}
-            canDoubleDown={gameState.gamePhase === 'playing' && BlackjackEngine.canDoubleDown(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
-            canSplit={gameState.gamePhase === 'playing' && BlackjackEngine.canSplit(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
-            onHit={hit}
-            onStand={stand}
-            onDoubleDown={doubleDown}
-            onSplit={split}
-            onNewGame={newGame}
-            odds={odds}
-          />
-        </GameTable>
+              <GameControls
+                gamePhase={gameState.gamePhase}
+                canHit={gameState.gamePhase === 'playing' && !currentPlayer.hand.isBusted}
+                canStand={gameState.gamePhase === 'playing'}
+                canDoubleDown={gameState.gamePhase === 'playing' && BlackjackEngine.canDoubleDown(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
+                canSplit={gameState.gamePhase === 'playing' && BlackjackEngine.canSplit(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
+                onHit={hit}
+                onStand={stand}
+                onDoubleDown={doubleDown}
+                onSplit={split}
+                onNewGame={newGame}
+                odds={odds}
+              />
+            </GameTable>
+          </>
+        ) : (
+          // Desktop Layout: Original layout with betting panel on right
+          <GameTable>
+            <div className="betting-section">
+              <BettingPanel
+                chips={currentPlayer.chips}
+                currentBet={currentPlayer.bet}
+                minBet={gameState.minBet}
+                maxBet={gameState.maxBet}
+                canBet={gameState.gamePhase === 'betting'}
+                onPlaceBet={placeBet}
+                onNewGame={newGame}
+                onResetSession={resetSession}
+                gamePhase={gameState.gamePhase}
+                sessionStats={sessionStats}
+                autoPlay={autoPlay}
+                onAutoPlayChange={setAutoPlay}
+                lastBetAmount={lastBetAmount}
+                autoPlayCountdown={autoPlayCountdown}
+              />
+            </div>
+
+            <DealerHand
+              hand={gameState.dealer.hand}
+              hideSecondCard={gameState.gamePhase === 'playing'}
+            />
+
+            <div className="game-center">
+              {gameMessage && (
+                <div className="game-message">{gameMessage}</div>
+              )}
+            </div>
+
+            <PlayerHand
+              player={currentPlayer}
+              isActive={true}
+            />
+
+            <GameControls
+              gamePhase={gameState.gamePhase}
+              canHit={gameState.gamePhase === 'playing' && !currentPlayer.hand.isBusted}
+              canStand={gameState.gamePhase === 'playing'}
+              canDoubleDown={gameState.gamePhase === 'playing' && BlackjackEngine.canDoubleDown(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
+              canSplit={gameState.gamePhase === 'playing' && BlackjackEngine.canSplit(currentPlayer.hand) && currentPlayer.chips >= currentPlayer.bet}
+              onHit={hit}
+              onStand={stand}
+              onDoubleDown={doubleDown}
+              onSplit={split}
+              onNewGame={newGame}
+              odds={odds}
+            />
+          </GameTable>
+        )}
       </div>
     </div>
   )
