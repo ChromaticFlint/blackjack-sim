@@ -358,21 +358,46 @@ export function SinglePlayerPage() {
     // Split the hand into two hands
     const { hand1, hand2 } = BlackjackEngine.splitHand(currentPlayer.hand);
 
+    // Deal a second card to each split hand
+    let newDeck = [...gameState.deck];
+
+    // Deal second card to first hand
+    const firstHandResult = BlackjackEngine.dealCard(newDeck, hand1);
+    newDeck = firstHandResult.newDeck;
+    const completedHand1 = firstHandResult.newHand;
+
+    // Deal second card to second hand
+    const secondHandResult = BlackjackEngine.dealCard(newDeck, hand2);
+    newDeck = secondHandResult.newDeck;
+    const completedHand2 = secondHandResult.newHand;
+
+    console.log('Split hands after dealing second cards:')
+    console.log('Hand 1:', completedHand1.cards.map(c => c.rank), 'Value:', completedHand1.value)
+    console.log('Hand 2:', completedHand2.cards.map(c => c.rank), 'Value:', completedHand2.value)
+
     setGameState(prev => ({
       ...prev,
       players: prev.players.map(player =>
         player.id === currentPlayer.id
           ? {
               ...player,
-              hand: hand1, // First split hand becomes the main hand
-              splitHands: [hand1, hand2], // Store both split hands
+              hand: completedHand1, // First split hand becomes the main hand
+              splitHands: [completedHand1, completedHand2], // Store both completed split hands
               currentHandIndex: 0, // Start with first hand
               chips: player.chips - player.bet, // Deduct additional bet for second hand
               bet: player.bet // Each hand has the same bet amount
             }
           : player
-      )
+      ),
+      deck: newDeck // Update deck after dealing cards
     }));
+
+    // Check if either split hand has blackjack (especially for split Aces)
+    if (completedHand1.isBlackjack || completedHand2.isBlackjack) {
+      console.log('Split hand(s) have blackjack!')
+      if (completedHand1.isBlackjack) console.log('Hand 1 has blackjack')
+      if (completedHand2.isBlackjack) console.log('Hand 2 has blackjack')
+    }
 
     setGameMessage('Hand split! Playing first hand...');
     setTimeout(() => setGameMessage(''), 3000);
