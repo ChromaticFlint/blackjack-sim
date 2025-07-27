@@ -14,7 +14,7 @@ export function OddsCheatSheet({
   dealerUpCard
 }: OddsCheatSheetProps) {
   const strategyAction = BlackjackEngine.getBasicStrategyAction(playerHand, dealerUpCard)
-  const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
+  const formatPercentage = (value: number) => `${value.toFixed(0)}%` // Value is already a percentage
 
   return (
     <div className="odds-cheat-sheet">

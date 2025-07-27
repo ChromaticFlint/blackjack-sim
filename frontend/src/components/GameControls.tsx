@@ -27,7 +27,7 @@ export function GameControls({
   onNewGame: _onNewGame,
   odds
 }: GameControlsProps) {
-  const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
+  const formatPercentage = (value: number) => `${value.toFixed(0)}%` // Value is already a percentage
   if (gamePhase === 'betting') {
     return (
       <div className="game-controls">

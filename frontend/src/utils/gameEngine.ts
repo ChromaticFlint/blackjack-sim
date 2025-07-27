@@ -251,26 +251,49 @@ export class BlackjackEngine {
     // Debug logging
     console.log('=== ODDS CALCULATION DEBUG ===');
     console.log('Player value:', playerValue, 'Dealer up card:', dealerValue);
-    console.log('Raw probabilities:', {
+    console.log('Raw probabilities (should be 0.0-1.0):', {
       hitWinProbability,
       standWinProbability,
       bustProbability,
       dealerBustProbability
     });
 
-    // Convert to percentages (0.0-1.0 to 0.0-100.0)
-    const result = {
-      hitWinProbability: Math.round(hitWinProbability * 1000) / 10,
-      standWinProbability: Math.round(standWinProbability * 1000) / 10,
-      bustProbability: Math.round(bustProbability * 1000) / 10,
-      dealerBustProbability: Math.round(dealerBustProbability * 1000) / 10,
-      canSplit: this.canSplit(playerHand),
-      canDoubleDown: this.canDoubleDown(playerHand),
-      splitWinProbability: splitWinProbability ? Math.round(splitWinProbability * 1000) / 10 : undefined,
-      doubleDownWinProbability: doubleDownWinProbability ? Math.round(doubleDownWinProbability * 1000) / 10 : undefined
+    // Check for invalid values
+    if (hitWinProbability > 1 || standWinProbability > 1 || bustProbability > 1) {
+      console.error('🚨 RAW PROBABILITY ERROR! Values over 1.0 detected:', {
+        hitWinProbability,
+        standWinProbability,
+        bustProbability
+      });
+    }
+
+    // Helper function to convert probability to percentage with bounds checking
+    const toPercentage = (prob: number): number => {
+      // Ensure probability is between 0 and 1
+      const boundedProb = Math.max(0, Math.min(1, prob));
+      // Convert to percentage (0-100) with 1 decimal place
+      return Math.round(boundedProb * 1000) / 10;
     };
 
-    console.log('Final percentages:', result);
+    // Convert to percentages with bounds checking
+    const result = {
+      hitWinProbability: toPercentage(hitWinProbability),
+      standWinProbability: toPercentage(standWinProbability),
+      bustProbability: toPercentage(bustProbability),
+      dealerBustProbability: toPercentage(dealerBustProbability),
+      canSplit: this.canSplit(playerHand),
+      canDoubleDown: this.canDoubleDown(playerHand),
+      splitWinProbability: splitWinProbability ? toPercentage(splitWinProbability) : undefined,
+      doubleDownWinProbability: doubleDownWinProbability ? toPercentage(doubleDownWinProbability) : undefined
+    };
+
+    console.log('Final percentages (should be 0-100):', result);
+
+    // Validation check
+    if (result.hitWinProbability > 100 || result.standWinProbability > 100 || result.bustProbability > 100) {
+      console.error('🚨 PERCENTAGE BUG DETECTED! Values over 100%:', result);
+    }
+
     return result;
   }
 

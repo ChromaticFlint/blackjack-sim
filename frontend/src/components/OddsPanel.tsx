@@ -19,7 +19,7 @@ export function OddsPanel({
 }: OddsPanelProps) {
   const strategyAction = BlackjackEngine.getBasicStrategyAction(playerHand, dealerUpCard)
 
-  const formatPercentage = (value: number) => `${(value * 100).toFixed(1)}%`
+  const formatPercentage = (value: number) => `${value.toFixed(1)}%` // Value is already a percentage
 
   return (
     <div className="odds-panel">
