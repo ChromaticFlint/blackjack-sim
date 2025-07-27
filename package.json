@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "A modern blackjack simulation game with single and multiplayer modes",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
+
   "scripts": {
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",

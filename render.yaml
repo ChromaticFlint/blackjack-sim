@@ -3,7 +3,7 @@ services:
     name: blackjack-backend
     env: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm ci --only=production || npm install --only=production
     startCommand: npm start
     plan: free
     envVars:
@@ -12,4 +12,6 @@ services:
       - key: FRONTEND_URL
         value: https://your-netlify-url.netlify.app
       - key: NPM_CONFIG_PRODUCTION
+        value: false
+      - key: YARN_PRODUCTION
         value: false
