@@ -10,16 +10,23 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: process.env.FRONTEND_URL || ["http://localhost:5173", "https://*.netlify.app"],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 10000
 
 // Middleware
 app.use(cors())
 app.use(express.json())
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`)
+  next()
+})
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -53,7 +60,8 @@ io.on('connection', (socket) => {
   })
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🎲 Blackjack server running on port ${PORT}`)
   console.log(`🌐 Health check: http://localhost:${PORT}/health`)
+  console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`)
 })
