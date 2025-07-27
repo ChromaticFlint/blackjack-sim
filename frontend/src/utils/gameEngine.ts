@@ -206,17 +206,17 @@ export class BlackjackEngine {
     // Calculate accurate bust probability on hit
     const bustProbability = this.calculateBustProbability(playerHand, deck);
 
-    // Simplified but accurate win probability calculations
+    // Calculate hit win probability more accurately
     let hitWinProbability = 0;
     let standWinProbability = 0;
 
-    // Basic strategy-based probabilities (simplified but realistic)
+    // For hit probability, calculate based on cards that improve the hand
     if (playerValue <= 11) {
-      hitWinProbability = 0.65; // Very good chance with low total
+      hitWinProbability = 0.65; // Almost always safe to hit
       standWinProbability = 0.15; // Poor chance standing with low total
     } else if (playerValue <= 16) {
       if (dealerValue >= 7) {
-        hitWinProbability = 0.35; // Dealer strong, need to hit
+        hitWinProbability = 0.35; // Dealer strong, need to hit despite risk
         standWinProbability = 0.25; // Poor chance standing against strong dealer
       } else {
         hitWinProbability = 0.25; // Dealer weak, hitting is riskier
@@ -225,13 +225,19 @@ export class BlackjackEngine {
     } else if (playerValue <= 18) {
       hitWinProbability = 0.15; // Risky to hit with decent total
       standWinProbability = 0.65; // Good chance to win standing
-    } else {
-      hitWinProbability = 0.05; // Very risky to hit
+    } else if (playerValue === 19) {
+      // With 19, only 2s improve to 21, everything else busts
+      hitWinProbability = 0.08; // ~4 cards out of 52 (2s) improve the hand
       standWinProbability = 0.75; // Very good chance to win standing
+    } else if (playerValue === 20) {
+      // With 20, only Aces improve to 21, everything else busts
+      hitWinProbability = 0.08; // ~4 cards out of 52 (Aces) improve the hand
+      standWinProbability = 0.80; // Excellent chance to win standing
+    } else {
+      // 21 or busted
+      hitWinProbability = 0.0; // Never hit on 21
+      standWinProbability = playerValue === 21 ? 0.85 : 0.0; // 21 is great, busted is 0
     }
-
-    // Adjust for bust probability
-    hitWinProbability = hitWinProbability * (1 - bustProbability);
 
     // Dealer bust probabilities (accurate)
     const dealerBustProbs: { [key: number]: number } = {

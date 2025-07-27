@@ -400,20 +400,28 @@ export function SinglePlayerPage() {
 
   const endGame = (finalDealer?: Player) => {
     const dealerToUse = finalDealer || gameState.dealer
+    // CRITICAL FIX: Get current player from current game state, not closure
+    const currentPlayerFromState = gameState.players[gameState.currentPlayerIndex]
 
     // Debug logging
     console.log('=== GAME END DEBUG ===')
     console.log('endGame called with finalDealer:', finalDealer ? 'YES' : 'NO')
+    console.log('currentPlayer from closure vs state:', {
+      closureValue: currentPlayer.hand.value,
+      closureBusted: currentPlayer.hand.isBusted,
+      stateValue: currentPlayerFromState.hand.value,
+      stateBusted: currentPlayerFromState.hand.isBusted
+    })
 
     // Handle split hands
-    if (currentPlayer.splitHands && currentPlayer.splitHands.length > 0) {
+    if (currentPlayerFromState.splitHands && currentPlayerFromState.splitHands.length > 0) {
       console.log('Processing split hands...')
       let totalPayout = 0;
       let results: string[] = [];
 
-      for (let i = 0; i < currentPlayer.splitHands.length; i++) {
-        const splitHand = currentPlayer.splitHands[i];
-        const handPayout = BlackjackEngine.calculatePayout(currentPlayer.bet, splitHand, dealerToUse.hand);
+      for (let i = 0; i < currentPlayerFromState.splitHands.length; i++) {
+        const splitHand = currentPlayerFromState.splitHands[i];
+        const handPayout = BlackjackEngine.calculatePayout(currentPlayerFromState.bet, splitHand, dealerToUse.hand);
         const handResult = BlackjackEngine.determineWinner(splitHand, dealerToUse.hand);
 
         totalPayout += handPayout;
@@ -430,7 +438,7 @@ export function SinglePlayerPage() {
       console.log('Total split payout:', totalPayout);
       console.log('Split results:', results);
 
-      const newChips = currentPlayer.chips + totalPayout;
+      const newChips = currentPlayerFromState.chips + totalPayout;
 
       // Update session stats for split hands
       let handsWon = 0;
@@ -439,7 +447,7 @@ export function SinglePlayerPage() {
       let playerBlackjacks = 0;
       let dealerBlackjacks = 0;
 
-      for (const splitHand of currentPlayer.splitHands) {
+      for (const splitHand of currentPlayerFromState.splitHands) {
         const handResult = BlackjackEngine.determineWinner(splitHand, dealerToUse.hand);
         if (handResult === 'player') handsWon++;
         else if (handResult === 'dealer') handsLost++;
@@ -449,7 +457,7 @@ export function SinglePlayerPage() {
         if (dealerToUse.hand.isBlackjack) dealerBlackjacks++;
       }
 
-      const handsPlayed = sessionStats.handsPlayed + currentPlayer.splitHands.length;
+      const handsPlayed = sessionStats.handsPlayed + currentPlayerFromState.splitHands.length;
       const totalHandsWon = sessionStats.handsWon + handsWon;
 
       const newStats = {
@@ -458,8 +466,8 @@ export function SinglePlayerPage() {
         handsWon: totalHandsWon,
         handsLost: sessionStats.handsLost + handsLost,
         handsPushed: sessionStats.handsPushed + handsPushed,
-        totalWagered: sessionStats.totalWagered + (currentPlayer.bet * currentPlayer.splitHands.length),
-        netWinnings: sessionStats.netWinnings + (totalPayout - (currentPlayer.bet * currentPlayer.splitHands.length)),
+        totalWagered: sessionStats.totalWagered + (currentPlayerFromState.bet * currentPlayerFromState.splitHands.length),
+        netWinnings: sessionStats.netWinnings + (totalPayout - (currentPlayerFromState.bet * currentPlayerFromState.splitHands.length)),
         winRate: handsPlayed > 0 ? (totalHandsWon / handsPlayed) * 100 : 0,
         playerBlackjacks: (sessionStats.playerBlackjacks || 0) + playerBlackjacks,
         dealerBlackjacks: (sessionStats.dealerBlackjacks || 0) + dealerBlackjacks
@@ -474,7 +482,7 @@ export function SinglePlayerPage() {
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(player =>
-          player.id === currentPlayer.id
+          player.id === currentPlayerFromState.id
             ? {
                 ...player,
                 chips: newChips,
@@ -491,11 +499,11 @@ export function SinglePlayerPage() {
     }
 
     // Regular single hand processing
-    console.log('Player hand:', {
-      cards: currentPlayer.hand.cards,
-      value: currentPlayer.hand.value,
-      isBlackjack: currentPlayer.hand.isBlackjack,
-      isBusted: currentPlayer.hand.isBusted
+    console.log('Player hand (from state):', {
+      cards: currentPlayerFromState.hand.cards,
+      value: currentPlayerFromState.hand.value,
+      isBlackjack: currentPlayerFromState.hand.isBlackjack,
+      isBusted: currentPlayerFromState.hand.isBusted
     })
     console.log('Dealer hand:', {
       cards: dealerToUse.hand.cards,
@@ -505,51 +513,51 @@ export function SinglePlayerPage() {
     })
 
     // Double-check bust calculation
-    const playerShouldBeBusted = currentPlayer.hand.value > 21
+    const playerShouldBeBusted = currentPlayerFromState.hand.value > 21
     console.log('Player value > 21?', playerShouldBeBusted)
-    console.log('Player isBusted property:', currentPlayer.hand.isBusted)
-    if (playerShouldBeBusted !== currentPlayer.hand.isBusted) {
+    console.log('Player isBusted property:', currentPlayerFromState.hand.isBusted)
+    if (playerShouldBeBusted !== currentPlayerFromState.hand.isBusted) {
       console.error('🚨 BUST DETECTION MISMATCH! Value > 21 but isBusted is wrong!')
     }
 
     const payout = BlackjackEngine.calculatePayout(
-      currentPlayer.bet,
-      currentPlayer.hand,
+      currentPlayerFromState.bet,
+      currentPlayerFromState.hand,
       dealerToUse.hand
     )
 
-    const result = BlackjackEngine.determineWinner(currentPlayer.hand, dealerToUse.hand)
+    const result = BlackjackEngine.determineWinner(currentPlayerFromState.hand, dealerToUse.hand)
 
     console.log('=== PAYOUT CALCULATION ===')
-    console.log('Player hand:', currentPlayer.hand.value, 'cards:', currentPlayer.hand.cards.length)
+    console.log('Player hand:', currentPlayerFromState.hand.value, 'cards:', currentPlayerFromState.hand.cards.length)
     console.log('Dealer hand:', dealerToUse.hand.value, 'cards:', dealerToUse.hand.cards.length)
-    console.log('Bet amount:', currentPlayer.bet)
+    console.log('Bet amount:', currentPlayerFromState.bet)
     console.log('Result:', result)
     console.log('Payout:', payout)
-    console.log('Expected for win: bet + bet =', currentPlayer.bet + currentPlayer.bet)
+    console.log('Expected for win: bet + bet =', currentPlayerFromState.bet + currentPlayerFromState.bet)
     console.log('========================')
-    
+
     let message = ''
     if (result === 'player') {
-      message = currentPlayer.hand.isBlackjack ? 'Blackjack! You win!' : 'You win!'
+      message = currentPlayerFromState.hand.isBlackjack ? 'Blackjack! You win!' : 'You win!'
     } else if (result === 'dealer') {
-      message = currentPlayer.hand.isBusted ? 'Busted! You lose!' : 'Dealer wins!'
+      message = currentPlayerFromState.hand.isBusted ? 'Busted! You lose!' : 'Dealer wins!'
     } else {
       message = 'Push! It\'s a tie!'
     }
 
     setGameMessage(message)
 
-    const newChips = currentPlayer.chips + payout
+    const newChips = currentPlayerFromState.chips + payout
 
     // Debug chip calculation
     console.log('Chip Calculation:', {
-      currentChips: currentPlayer.chips,
-      bet: currentPlayer.bet,
+      currentChips: currentPlayerFromState.chips,
+      bet: currentPlayerFromState.bet,
       payout,
       newChips,
       result,
-      shouldGain: result === 'player' ? currentPlayer.bet : 0
+      shouldGain: result === 'player' ? currentPlayerFromState.bet : 0
     })
 
     // Update session stats
@@ -557,13 +565,13 @@ export function SinglePlayerPage() {
     const handsWon = result === 'player' ? sessionStats.handsWon + 1 : sessionStats.handsWon
 
     // Check for blackjacks
-    const playerHasBlackjack = currentPlayer.hand.isBlackjack
+    const playerHasBlackjack = currentPlayerFromState.hand.isBlackjack
     const dealerHasBlackjack = dealerToUse.hand.isBlackjack
 
     // Debug logging
     console.log('Blackjack Detection:', {
-      playerCards: currentPlayer.hand.cards.length,
-      playerValue: currentPlayer.hand.value,
+      playerCards: currentPlayerFromState.hand.cards.length,
+      playerValue: currentPlayerFromState.hand.value,
       playerHasBlackjack,
       dealerCards: dealerToUse.hand.cards.length,
       dealerValue: dealerToUse.hand.value,
@@ -576,8 +584,8 @@ export function SinglePlayerPage() {
       handsWon,
       handsLost: result === 'dealer' ? sessionStats.handsLost + 1 : sessionStats.handsLost,
       handsPushed: result === 'push' ? sessionStats.handsPushed + 1 : sessionStats.handsPushed,
-      totalWagered: sessionStats.totalWagered + currentPlayer.bet,
-      netWinnings: sessionStats.netWinnings + (payout - currentPlayer.bet),
+      totalWagered: sessionStats.totalWagered + currentPlayerFromState.bet,
+      netWinnings: sessionStats.netWinnings + (payout - currentPlayerFromState.bet),
       winRate: handsPlayed > 0 ? (handsWon / handsPlayed) * 100 : 0,
       playerBlackjacks: (sessionStats.playerBlackjacks || 0) + (playerHasBlackjack ? 1 : 0),
       dealerBlackjacks: (sessionStats.dealerBlackjacks || 0) + (dealerHasBlackjack ? 1 : 0)
@@ -585,7 +593,7 @@ export function SinglePlayerPage() {
 
     // Debug session stats
     console.log('Session Stats Update:', {
-      bet: currentPlayer.bet,
+      bet: currentPlayerFromState.bet,
       payout,
       result,
       oldNetWinnings: sessionStats.netWinnings,
@@ -606,7 +614,7 @@ export function SinglePlayerPage() {
       const updatedState = {
         ...prev,
         players: prev.players.map(player =>
-          player.id === currentPlayer.id
+          player.id === currentPlayerFromState.id
             ? { ...player, chips: newChips }
             : player
         ),
@@ -614,7 +622,7 @@ export function SinglePlayerPage() {
       }
 
       console.log('Game State Update:', {
-        oldChips: currentPlayer.chips,
+        oldChips: currentPlayerFromState.chips,
         newChips,
         updatedPlayerChips: updatedState.players[0].chips
       })
@@ -782,9 +790,6 @@ export function SinglePlayerPage() {
           <>
             <div className="mobile-controls-section">
               <GameControlsPanel
-                autoPlay={autoPlay}
-                onAutoPlayChange={setAutoPlay}
-                lastBetAmount={lastBetAmount}
                 sessionStats={sessionStats}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
@@ -801,10 +806,10 @@ export function SinglePlayerPage() {
                 onNewGame={newGame}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
-                sessionStats={sessionStats}
                 autoPlay={autoPlay}
                 lastBetAmount={lastBetAmount}
                 autoPlayCountdown={autoPlayCountdown}
+                onAutoPlayChange={setAutoPlay}
               />
             </div>
             <GameTable>
@@ -823,22 +828,6 @@ export function SinglePlayerPage() {
                 player={currentPlayer}
                 isActive={true}
               />
-
-          <DealerHand
-            hand={gameState.dealer.hand}
-            hideSecondCard={gameState.gamePhase === 'playing'}
-          />
-
-          <div className="game-center">
-            {gameMessage && (
-              <div className="game-message">{gameMessage}</div>
-            )}
-          </div>
-
-          <PlayerHand
-            player={currentPlayer}
-            isActive={true}
-          />
 
               <GameControls
                 gamePhase={gameState.gamePhase}
@@ -860,9 +849,6 @@ export function SinglePlayerPage() {
           <GameTable>
             <div className="game-controls-panel">
               <GameControlsPanel
-                autoPlay={autoPlay}
-                onAutoPlayChange={setAutoPlay}
-                lastBetAmount={lastBetAmount}
                 sessionStats={sessionStats}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
@@ -880,10 +866,10 @@ export function SinglePlayerPage() {
                 onNewGame={newGame}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
-                sessionStats={sessionStats}
                 autoPlay={autoPlay}
                 lastBetAmount={lastBetAmount}
                 autoPlayCountdown={autoPlayCountdown}
+                onAutoPlayChange={setAutoPlay}
               />
             </div>
 

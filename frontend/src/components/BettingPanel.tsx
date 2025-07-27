@@ -24,6 +24,7 @@ interface BettingPanelProps {
   autoPlay?: boolean
   lastBetAmount?: number
   autoPlayCountdown?: number
+  onAutoPlayChange?: (enabled: boolean) => void
 }
 
 export function BettingPanel({
@@ -34,12 +35,11 @@ export function BettingPanel({
   canBet,
   onPlaceBet,
   onNewGame,
-  onResetSession,
   gamePhase,
-  sessionStats,
   autoPlay = false,
   lastBetAmount = 0,
-  autoPlayCountdown = 0
+  autoPlayCountdown = 0,
+  onAutoPlayChange
 }: BettingPanelProps) {
   const [betAmount, setBetAmount] = useState(minBet)
 
@@ -73,53 +73,7 @@ export function BettingPanel({
         )}
       </div>
 
-      {sessionStats && sessionStats.handsPlayed > 0 && (
-        <div className="session-stats">
-          <h4>Session Stats</h4>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <span className="stat-label">Hands:</span>
-              <span className="stat-value">{sessionStats.handsPlayed}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Won:</span>
-              <span className="stat-value">{sessionStats.handsWon}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Lost:</span>
-              <span className="stat-value">{sessionStats.handsLost}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Pushed:</span>
-              <span className="stat-value">{sessionStats.handsPushed}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Win Rate:</span>
-              <span className="stat-value">
-                {sessionStats.handsPlayed > 0 ?
-                  `${((sessionStats.handsWon / sessionStats.handsPlayed) * 100).toFixed(1)}%` :
-                  '0%'
-                }
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Net:</span>
-              <span className={`stat-value ${sessionStats.netWinnings >= 0 ? 'positive' : 'negative'}`}>
-                {sessionStats.netWinnings >= 0 ? '+' : ''}${sessionStats.netWinnings}
-              </span>
-            </div>
-          </div>
-          {onResetSession && (
-            <button
-              className="btn btn-secondary reset-session-btn"
-              onClick={onResetSession}
-              title="Reset session statistics"
-            >
-              Reset Session
-            </button>
-          )}
-        </div>
-      )}
+
 
       {canBet && (
         <>
@@ -187,6 +141,24 @@ export function BettingPanel({
           }
         </div>
       )}
+
+      {/* Auto-Play Controls */}
+      <div className="auto-play-section">
+        <h4>Auto-Play</h4>
+        <label className="auto-play-checkbox">
+          <input
+            type="checkbox"
+            checked={autoPlay}
+            onChange={(e) => onAutoPlayChange?.(e.target.checked)}
+          />
+          Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : '(place bet first)'}
+        </label>
+        {autoPlay && lastBetAmount > 0 && (
+          <div className="auto-play-info">
+            Automatically repeats ${lastBetAmount} bets
+          </div>
+        )}
+      </div>
     </div>
   )
 }

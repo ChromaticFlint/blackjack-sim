@@ -14,44 +14,18 @@ interface SessionStats {
 }
 
 interface GameControlsPanelProps {
-  autoPlay?: boolean
-  onAutoPlayChange?: (enabled: boolean) => void
-  lastBetAmount?: number
   sessionStats?: SessionStats
   onResetSession?: () => void
   gamePhase: string
 }
 
 export function GameControlsPanel({
-  autoPlay = false,
-  onAutoPlayChange,
-  lastBetAmount = 0,
   sessionStats,
   onResetSession,
   gamePhase
 }: GameControlsPanelProps) {
   return (
     <div className="game-controls-panel">
-      <div className="panel-section">
-        <h3 className="panel-title">Game Settings</h3>
-        
-        {/* Auto-Play Section */}
-        <div className="auto-play-section">
-          <label className="auto-play-checkbox">
-            <input
-              type="checkbox"
-              checked={autoPlay}
-              onChange={(e) => onAutoPlayChange?.(e.target.checked)}
-            />
-            Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : '(place bet first)'}
-          </label>
-          {autoPlay && lastBetAmount > 0 && (
-            <div className="auto-play-info">
-              Automatically repeats ${lastBetAmount} bets
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Session Statistics */}
       {sessionStats && (
