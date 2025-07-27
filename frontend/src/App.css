@@ -861,6 +861,37 @@ body {
   font-style: italic;
 }
 
+/* Auto-Play Section */
+.auto-play-section {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.auto-play-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.auto-play-checkbox input[type="checkbox"] {
+  margin-right: 0.5rem;
+  transform: scale(1.2);
+  accent-color: #ffd700;
+}
+
+.auto-play-info {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
 /* Session Stats */
 .session-stats {
   margin: 1rem 0;

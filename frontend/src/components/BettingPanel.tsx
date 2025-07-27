@@ -21,6 +21,9 @@ interface BettingPanelProps {
   onResetSession?: () => void
   gamePhase: string
   sessionStats?: SessionStats
+  autoPlay?: boolean
+  onAutoPlayChange?: (enabled: boolean) => void
+  lastBetAmount?: number
 }
 
 export function BettingPanel({
@@ -33,7 +36,10 @@ export function BettingPanel({
   onNewGame,
   onResetSession,
   gamePhase,
-  sessionStats
+  sessionStats,
+  autoPlay = false,
+  onAutoPlayChange,
+  lastBetAmount = 0
 }: BettingPanelProps) {
   const [betAmount, setBetAmount] = useState(minBet)
 
@@ -144,6 +150,23 @@ export function BettingPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="auto-play-section">
+            <label className="auto-play-checkbox">
+              <input
+                type="checkbox"
+                checked={autoPlay}
+                onChange={(e) => onAutoPlayChange?.(e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : ''}
+            </label>
+            {autoPlay && lastBetAmount > 0 && (
+              <div className="auto-play-info">
+                Will automatically repeat ${lastBetAmount} bets
+              </div>
+            )}
           </div>
 
           <button

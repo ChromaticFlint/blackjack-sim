@@ -44,6 +44,8 @@ export function SinglePlayerPage() {
 
   const [odds, setOdds] = useState<BlackjackOdds | null>(null)
   const [gameMessage, setGameMessage] = useState<string>('')
+  const [autoPlay, setAutoPlay] = useState(false)
+  const [lastBetAmount, setLastBetAmount] = useState(0)
   // const [showStrategy, setShowStrategy] = useState(true)
   const [sessionStats, setSessionStats] = useState(() => {
     const saved = localStorage.getItem('blackjack-session')
@@ -76,6 +78,8 @@ export function SinglePlayerPage() {
 
   const placeBet = (amount: number) => {
     if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) return
+
+    setLastBetAmount(amount) // Track the last bet for auto-play
 
     setGameState(prev => ({
       ...prev,
@@ -293,6 +297,19 @@ export function SinglePlayerPage() {
       ),
       gamePhase: 'game-over'
     }))
+
+    // Auto-play: automatically start next game if enabled
+    if (autoPlay && lastBetAmount > 0 && newChips >= lastBetAmount) {
+      setTimeout(() => {
+        newGame()
+        setTimeout(() => placeBet(lastBetAmount), 100)
+      }, 2000) // Wait 2 seconds to show results, then auto-start next game
+    } else if (autoPlay && newChips < lastBetAmount) {
+      // Disable auto-play if not enough chips
+      setAutoPlay(false)
+      setGameMessage('Auto-play disabled: insufficient chips')
+      setTimeout(() => setGameMessage(''), 3000)
+    }
   }
 
   const newGame = () => {
@@ -349,6 +366,9 @@ export function SinglePlayerPage() {
               onResetSession={resetSession}
               gamePhase={gameState.gamePhase}
               sessionStats={sessionStats}
+              autoPlay={autoPlay}
+              onAutoPlayChange={setAutoPlay}
+              lastBetAmount={lastBetAmount}
             />
           </div>
 
