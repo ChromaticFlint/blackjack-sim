@@ -9,6 +9,8 @@ interface SessionStats {
   netWinnings: number
   winRate: number
   startingChips: number
+  playerBlackjacks: number
+  dealerBlackjacks: number
 }
 
 interface GameControlsPanelProps {
@@ -81,6 +83,14 @@ export function GameControlsPanel({
               <span className={`stat-value ${(sessionStats.netWinnings || 0) >= 0 ? 'text-green' : 'text-red'}`}>
                 {(sessionStats.netWinnings || 0) >= 0 ? '+' : ''}${sessionStats.netWinnings || 0}
               </span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Player BJ:</span>
+              <span className="stat-value text-gold">{sessionStats.playerBlackjacks || 0}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Dealer BJ:</span>
+              <span className="stat-value text-gold">{sessionStats.dealerBlackjacks || 0}</span>
             </div>
           </div>
         </div>

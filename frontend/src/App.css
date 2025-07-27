@@ -498,6 +498,14 @@ body {
   gap: 0.5rem;
 }
 
+/* Responsive stats grid */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
 .stat-item {
   display: flex;
   justify-content: space-between;
@@ -519,6 +527,7 @@ body {
 .text-green { color: #10b981; }
 .text-red { color: #ef4444; }
 .text-yellow { color: #f59e0b; }
+.text-gold { color: #ffd700; }
 
 .reset-btn {
   width: 100%;
