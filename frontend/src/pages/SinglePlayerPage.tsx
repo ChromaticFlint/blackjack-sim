@@ -58,6 +58,16 @@ export function SinglePlayerPage() {
 
     checkMobile()
     window.addEventListener('resize', checkMobile)
+
+    // Add debug function to global scope for easy testing
+    ;(window as any).resetToFreshSession = () => {
+      localStorage.removeItem('blackjack-chips')
+      localStorage.removeItem('blackjack-session')
+      window.location.reload()
+    }
+
+    console.log('Debug: Use resetToFreshSession() to clear all data and start fresh with 1000 chips')
+
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
   // const [showStrategy, setShowStrategy] = useState(true)
@@ -92,6 +102,11 @@ export function SinglePlayerPage() {
   })
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
+
+  // Debug: Log current player chips whenever they change
+  useEffect(() => {
+    console.log('Current player chips:', currentPlayer.chips)
+  }, [currentPlayer.chips])
 
   useEffect(() => {
     if (gameState.gamePhase === 'playing' && currentPlayer && gameState.dealer.hand.cards.length > 0) {
@@ -505,6 +520,20 @@ export function SinglePlayerPage() {
   }
 
   const resetSession = () => {
+    const startingChips = 1000 // Always reset to 1000 chips
+
+    // Reset player chips to 1000
+    setGameState(prev => ({
+      ...prev,
+      players: prev.players.map(player =>
+        player.id === currentPlayer.id
+          ? { ...player, chips: startingChips, bet: 0 }
+          : player
+      ),
+      gamePhase: 'betting' as const
+    }))
+
+    // Reset session stats
     const newStats = {
       handsPlayed: 0,
       handsWon: 0,
@@ -515,10 +544,16 @@ export function SinglePlayerPage() {
       winRate: 0,
       playerBlackjacks: 0,
       dealerBlackjacks: 0,
-      startingChips: currentPlayer.chips
+      startingChips
     }
+
     setSessionStats(newStats)
+
+    // Save to localStorage
+    localStorage.setItem('blackjack-chips', startingChips.toString())
     localStorage.setItem('blackjack-session', JSON.stringify(newStats))
+
+    console.log('Session reset - chips set to:', startingChips)
   }
 
   return (
