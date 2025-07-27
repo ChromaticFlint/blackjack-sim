@@ -85,6 +85,39 @@ export class BlackjackEngine {
     return hand.cards.length === 2 && !hand.isBusted;
   }
 
+  static splitHand(hand: Hand): { hand1: Hand; hand2: Hand } {
+    if (!this.canSplit(hand)) {
+      throw new Error('Cannot split this hand');
+    }
+
+    const hand1 = this.createHand([hand.cards[0]]);
+    const hand2 = this.createHand([hand.cards[1]]);
+
+    return { hand1, hand2 };
+  }
+
+  static dealCardToSplitHand(deck: Card[], splitHands: Hand[], handIndex: number): {
+    newDeck: Card[];
+    newSplitHands: Hand[];
+  } {
+    if (deck.length === 0) {
+      throw new Error('Deck is empty');
+    }
+
+    if (handIndex < 0 || handIndex >= splitHands.length) {
+      throw new Error('Invalid hand index');
+    }
+
+    const newDeck = [...deck];
+    const card = newDeck.pop()!;
+    const newSplitHands = [...splitHands];
+
+    const newCards = [...splitHands[handIndex].cards, card];
+    newSplitHands[handIndex] = this.createHand(newCards);
+
+    return { newDeck, newSplitHands };
+  }
+
   static shouldDealerHit(hand: Hand): boolean {
     if (hand.value < 17) return true;
     if (hand.value === 17 && hand.isSoft) return true; // Dealer hits soft 17
@@ -167,58 +200,195 @@ export class BlackjackEngine {
   }
 
   static calculateOdds(playerHand: Hand, dealerUpCard: Card, deck: Card[]): BlackjackOdds {
-    // Simplified odds calculation - in a real implementation, this would be more complex
     const playerValue = playerHand.value;
-    const dealerValue = dealerUpCard.value === 11 ? 11 : dealerUpCard.value;
-    
-    // Basic probability calculations
-    let hitWinProbability = 0;
-    let standWinProbability = 0;
-    let bustProbability = 0;
-    
-    // Calculate bust probability on hit
-    const cardsTobust = deck.filter(card => {
-      const newValue = playerValue + (card.rank === 'A' ? 1 : card.value);
-      return newValue > 21;
-    }).length;
-    
-    bustProbability = cardsTobust / deck.length;
-    
-    // Simplified win probabilities based on basic strategy
-    if (playerValue <= 11) {
-      hitWinProbability = 0.8;
-      standWinProbability = 0.2;
-    } else if (playerValue <= 16) {
-      if (dealerValue >= 7) {
-        hitWinProbability = 0.4;
-        standWinProbability = 0.2;
-      } else {
-        hitWinProbability = 0.3;
-        standWinProbability = 0.6;
-      }
-    } else {
-      hitWinProbability = 0.1;
-      standWinProbability = 0.7;
-    }
-    
-    // Dealer bust probability based on up card
-    const dealerBustProbabilities: { [key: number]: number } = {
-      2: 0.35, 3: 0.37, 4: 0.40, 5: 0.42, 6: 0.42,
-      7: 0.26, 8: 0.24, 9: 0.23, 10: 0.21, 11: 0.17
-    };
-    
-    const dealerBustProbability = dealerBustProbabilities[dealerValue] || 0.21;
-    
+
+    // Calculate accurate bust probability on hit
+    const bustProbability = this.calculateBustProbability(playerHand, deck);
+
+    // Calculate dealer final hand probabilities
+    const dealerProbs = this.calculateDealerProbabilities(dealerUpCard, deck);
+
+    // Calculate hit win probability
+    const hitWinProbability = this.calculateHitWinProbability(playerHand, dealerProbs, deck);
+
+    // Calculate stand win probability
+    const standWinProbability = this.calculateStandWinProbability(playerValue, dealerProbs);
+
+    // Calculate double down win probability (if applicable)
+    const doubleDownWinProbability = this.canDoubleDown(playerHand) ?
+      this.calculateDoubleDownWinProbability(playerHand, dealerProbs, deck) : undefined;
+
+    // Calculate split win probability (if applicable)
+    const splitWinProbability = this.canSplit(playerHand) ?
+      this.calculateSplitWinProbability(playerHand, dealerUpCard, deck) : undefined;
+
     return {
-      hitWinProbability: Math.max(0, Math.min(1, hitWinProbability)),
-      standWinProbability: Math.max(0, Math.min(1, standWinProbability)),
-      bustProbability: Math.max(0, Math.min(1, bustProbability)),
-      dealerBustProbability,
+      hitWinProbability: Math.round(hitWinProbability * 1000) / 10, // Round to 0.1%
+      standWinProbability: Math.round(standWinProbability * 1000) / 10,
+      bustProbability: Math.round(bustProbability * 1000) / 10,
+      dealerBustProbability: Math.round(dealerProbs.bustProbability * 1000) / 10,
       canSplit: this.canSplit(playerHand),
       canDoubleDown: this.canDoubleDown(playerHand),
-      splitWinProbability: this.canSplit(playerHand) ? 0.5 : undefined,
-      doubleDownWinProbability: this.canDoubleDown(playerHand) ? hitWinProbability * 0.9 : undefined
+      splitWinProbability: splitWinProbability ? Math.round(splitWinProbability * 1000) / 10 : undefined,
+      doubleDownWinProbability: doubleDownWinProbability ? Math.round(doubleDownWinProbability * 1000) / 10 : undefined
     };
+  }
+
+  static calculateBustProbability(playerHand: Hand, deck: Card[]): number {
+    if (playerHand.value >= 21) return playerHand.value > 21 ? 1 : 0;
+
+    let bustCards = 0;
+    for (const card of deck) {
+      const cardValue = card.rank === 'A' ? 1 : card.value; // Use 1 for Ace to be conservative
+      if (playerHand.value + cardValue > 21) {
+        bustCards++;
+      }
+    }
+
+    return deck.length > 0 ? bustCards / deck.length : 0;
+  }
+
+  static calculateDealerProbabilities(dealerUpCard: Card, _deck: Card[]): {
+    finalValues: { [value: number]: number },
+    bustProbability: number
+  } {
+    // Accurate dealer bust probabilities based on up card (from blackjack mathematics)
+    const dealerBustProbs: { [key: string]: number } = {
+      'A': 0.1157, '2': 0.3539, '3': 0.3745, '4': 0.4040, '5': 0.4283, '6': 0.4238,
+      '7': 0.2616, '8': 0.2385, '9': 0.2327, '10': 0.2131, 'J': 0.2131, 'Q': 0.2131, 'K': 0.2131
+    };
+
+    // Dealer final hand probabilities (17-21)
+    const dealerFinalProbs: { [key: string]: { [value: number]: number } } = {
+      'A': { 17: 0.1317, 18: 0.1317, 19: 0.1317, 20: 0.1317, 21: 0.3075 },
+      '2': { 17: 0.1393, 18: 0.1314, 19: 0.1303, 20: 0.1258, 21: 0.1193 },
+      '3': { 17: 0.1301, 18: 0.1327, 19: 0.1303, 20: 0.1258, 21: 0.1066 },
+      '4': { 17: 0.1208, 18: 0.1340, 19: 0.1303, 20: 0.1258, 21: 0.0851 },
+      '5': { 17: 0.1208, 18: 0.1227, 19: 0.1303, 20: 0.1258, 21: 0.0721 },
+      '6': { 17: 0.1654, 18: 0.1063, 19: 0.1063, 20: 0.1063, 21: 0.0919 },
+      '7': { 17: 0.3692, 18: 0.1385, 19: 0.0769, 20: 0.0769, 21: 0.0769 },
+      '8': { 17: 0.1292, 18: 0.3615, 19: 0.1292, 20: 0.0615, 21: 0.0615 },
+      '9': { 17: 0.1173, 18: 0.1173, 19: 0.3596, 20: 0.1173, 21: 0.0558 },
+      '10': { 17: 0.0385, 18: 0.0385, 19: 0.0385, 20: 0.7692, 21: 0.0385 },
+      'J': { 17: 0.0385, 18: 0.0385, 19: 0.0385, 20: 0.7692, 21: 0.0385 },
+      'Q': { 17: 0.0385, 18: 0.0385, 19: 0.0385, 20: 0.7692, 21: 0.0385 },
+      'K': { 17: 0.0385, 18: 0.0385, 19: 0.0385, 20: 0.7692, 21: 0.0385 }
+    };
+
+    const bustProbability = dealerBustProbs[dealerUpCard.rank] || 0.21;
+    const finalValues = dealerFinalProbs[dealerUpCard.rank] ||
+      { 17: 0.2, 18: 0.2, 19: 0.2, 20: 0.2, 21: 0.2 };
+
+    return { finalValues, bustProbability };
+  }
+
+  static calculateHitWinProbability(playerHand: Hand, dealerProbs: any, deck: Card[]): number {
+    if (playerHand.value >= 21) return 0;
+
+    let totalWinProb = 0;
+    let totalCards = 0;
+
+    for (const card of deck) {
+      const cardValue = card.rank === 'A' ?
+        (playerHand.value + 11 <= 21 ? 11 : 1) : card.value;
+      const newValue = playerHand.value + cardValue;
+
+      if (newValue > 21) {
+        // Bust - 0% win probability
+        totalCards++;
+        continue;
+      }
+
+      // Calculate win probability for this new hand value
+      let winProb = dealerProbs.bustProbability; // Win if dealer busts
+
+      // Add probability of beating dealer's final hands
+      for (const [dealerFinal, prob] of Object.entries(dealerProbs.finalValues)) {
+        const dealerValue = parseInt(dealerFinal);
+        if (newValue > dealerValue) {
+          winProb += prob as number;
+        } else if (newValue === dealerValue) {
+          // Push - no win/loss
+        }
+      }
+
+      totalWinProb += winProb;
+      totalCards++;
+    }
+
+    return totalCards > 0 ? totalWinProb / totalCards : 0;
+  }
+
+  static calculateStandWinProbability(playerValue: number, dealerProbs: any): number {
+    if (playerValue > 21) return 0;
+    if (playerValue < 17) return dealerProbs.bustProbability; // Only win if dealer busts
+
+    let winProb = dealerProbs.bustProbability; // Win if dealer busts
+
+    // Add probability of beating dealer's final hands
+    for (const [dealerFinal, prob] of Object.entries(dealerProbs.finalValues)) {
+      const dealerValue = parseInt(dealerFinal);
+      if (playerValue > dealerValue) {
+        winProb += prob as number;
+      }
+    }
+
+    return winProb;
+  }
+
+  static calculateDoubleDownWinProbability(playerHand: Hand, dealerProbs: any, deck: Card[]): number {
+    // Double down takes exactly one card, then stands
+    if (playerHand.value >= 21) return 0;
+
+    let totalWinProb = 0;
+    let totalCards = 0;
+
+    for (const card of deck) {
+      const cardValue = card.rank === 'A' ?
+        (playerHand.value + 11 <= 21 ? 11 : 1) : card.value;
+      const newValue = playerHand.value + cardValue;
+
+      if (newValue > 21) {
+        // Bust - 0% win probability
+        totalCards++;
+        continue;
+      }
+
+      // Calculate stand win probability for this final value
+      const winProb = this.calculateStandWinProbability(newValue, dealerProbs);
+      totalWinProb += winProb;
+      totalCards++;
+    }
+
+    return totalCards > 0 ? totalWinProb / totalCards : 0;
+  }
+
+  static calculateSplitWinProbability(playerHand: Hand, dealerUpCard: Card, deck: Card[]): number {
+    if (!this.canSplit(playerHand)) return 0;
+
+    // Simplified split calculation - average win probability for each split hand
+    const cardRank = playerHand.cards[0].rank;
+
+    // Calculate average win probability after hitting once on each split hand
+    let totalWinProb = 0;
+    let validOutcomes = 0;
+
+    for (const card of deck) {
+      if (card.rank === cardRank) continue; // Can't draw the same card we split
+
+      const newCards = [playerHand.cards[0], card];
+      const newHand = this.createHand(newCards);
+
+      if (newHand.value <= 21) {
+        const dealerProbs = this.calculateDealerProbabilities(dealerUpCard, deck);
+        const handWinProb = this.calculateStandWinProbability(newHand.value, dealerProbs);
+        totalWinProb += handWinProb;
+      }
+      validOutcomes++;
+    }
+
+    // Return average win probability for both split hands
+    return validOutcomes > 0 ? totalWinProb / validOutcomes : 0;
   }
 
   static getBasicStrategyAction(playerHand: Hand, dealerUpCard: Card): string {

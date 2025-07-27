@@ -202,40 +202,117 @@ export function SinglePlayerPage() {
   const hit = () => {
     if (gameState.gamePhase !== 'playing') return
 
-    const result = BlackjackEngine.dealCard(gameState.deck, currentPlayer.hand)
+    // Check if we're playing split hands
+    if (currentPlayer.splitHands && currentPlayer.currentHandIndex !== undefined) {
+      const handIndex = currentPlayer.currentHandIndex;
+      const currentSplitHand = currentPlayer.splitHands[handIndex];
 
-    console.log('=== HIT RESULT ===')
-    console.log('New hand value:', result.newHand.value)
-    console.log('New hand isBusted:', result.newHand.isBusted)
-    console.log('Cards:', result.newHand.cards.map(c => c.rank))
+      const result = BlackjackEngine.dealCard(gameState.deck, currentSplitHand);
 
-    setGameState(prev => ({
-      ...prev,
-      players: prev.players.map(player =>
-        player.id === currentPlayer.id
-          ? { ...player, hand: result.newHand }
-          : player
-      ),
-      deck: result.newDeck
-    }))
+      console.log('=== HIT RESULT (Split Hand', handIndex + 1, ') ===')
+      console.log('New hand value:', result.newHand.value)
+      console.log('New hand isBusted:', result.newHand.isBusted)
+      console.log('Cards:', result.newHand.cards.map(c => c.rank))
 
-    if (result.newHand.isBusted) {
-      console.log('Player busted! Ending game...')
-      setTimeout(() => endGame(gameState.dealer), 1000)
+      const newSplitHands = [...currentPlayer.splitHands];
+      newSplitHands[handIndex] = result.newHand;
+
+      setGameState(prev => ({
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? {
+                ...player,
+                splitHands: newSplitHands,
+                hand: newSplitHands[handIndex] // Update main hand to current split hand
+              }
+            : player
+        ),
+        deck: result.newDeck
+      }))
+
+      if (result.newHand.isBusted) {
+        console.log('Split hand', handIndex + 1, 'busted! Moving to next hand...')
+        setTimeout(() => moveToNextSplitHand(), 1000)
+      } else {
+        console.log('Split hand', handIndex + 1, 'did not bust, continuing...')
+      }
     } else {
-      console.log('Player did not bust, continuing...')
+      // Regular single hand hit
+      const result = BlackjackEngine.dealCard(gameState.deck, currentPlayer.hand)
+
+      console.log('=== HIT RESULT ===')
+      console.log('New hand value:', result.newHand.value)
+      console.log('New hand isBusted:', result.newHand.isBusted)
+      console.log('Cards:', result.newHand.cards.map(c => c.rank))
+
+      setGameState(prev => ({
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? { ...player, hand: result.newHand }
+            : player
+        ),
+        deck: result.newDeck
+      }))
+
+      if (result.newHand.isBusted) {
+        console.log('Player busted! Ending game...')
+        setTimeout(() => endGame(gameState.dealer), 1000)
+      } else {
+        console.log('Player did not bust, continuing...')
+      }
     }
   }
+
+  const moveToNextSplitHand = () => {
+    if (!currentPlayer.splitHands || currentPlayer.currentHandIndex === undefined) {
+      return;
+    }
+
+    const nextHandIndex = currentPlayer.currentHandIndex + 1;
+
+    if (nextHandIndex < currentPlayer.splitHands.length) {
+      // Move to next split hand
+      console.log('Moving to split hand', nextHandIndex + 1);
+      setGameState(prev => ({
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? {
+                ...player,
+                currentHandIndex: nextHandIndex,
+                hand: player.splitHands![nextHandIndex] // Update main hand to current split hand
+              }
+            : player
+        )
+      }));
+
+      setGameMessage(`Playing hand ${nextHandIndex + 1} of ${currentPlayer.splitHands.length}...`);
+      setTimeout(() => setGameMessage(''), 2000);
+    } else {
+      // All split hands completed, play dealer turn
+      console.log('All split hands completed, playing dealer turn...');
+      setTimeout(() => playDealerTurn(), 1000);
+    }
+  };
 
   const stand = () => {
     if (gameState.gamePhase !== 'playing') return
 
-    setGameState(prev => ({
-      ...prev,
-      gamePhase: 'dealer-turn'
-    }))
+    // Check if we're playing split hands
+    if (currentPlayer.splitHands && currentPlayer.currentHandIndex !== undefined) {
+      console.log('Standing on split hand', currentPlayer.currentHandIndex + 1);
+      setTimeout(() => moveToNextSplitHand(), 1000);
+    } else {
+      // Regular single hand stand
+      setGameState(prev => ({
+        ...prev,
+        gamePhase: 'dealer-turn' as const
+      }))
 
-    setTimeout(() => playDealerTurn(), 500)
+      setTimeout(() => playDealerTurn(), 500)
+    }
   }
 
   const doubleDown = () => {
@@ -269,10 +346,36 @@ export function SinglePlayerPage() {
   }
 
   const split = () => {
-    // Split implementation would go here
-    // For now, just show a message
-    setGameMessage('Split functionality coming soon!')
-    setTimeout(() => setGameMessage(''), 3000)
+    if (gameState.gamePhase !== 'playing' || !BlackjackEngine.canSplit(currentPlayer.hand) || currentPlayer.chips < currentPlayer.bet) {
+      return;
+    }
+
+    console.log('=== SPLIT ACTION ===')
+    console.log('Original hand:', currentPlayer.hand.cards.map(c => c.rank))
+    console.log('Bet amount:', currentPlayer.bet)
+    console.log('Chips before split:', currentPlayer.chips)
+
+    // Split the hand into two hands
+    const { hand1, hand2 } = BlackjackEngine.splitHand(currentPlayer.hand);
+
+    setGameState(prev => ({
+      ...prev,
+      players: prev.players.map(player =>
+        player.id === currentPlayer.id
+          ? {
+              ...player,
+              hand: hand1, // First split hand becomes the main hand
+              splitHands: [hand1, hand2], // Store both split hands
+              currentHandIndex: 0, // Start with first hand
+              chips: player.chips - player.bet, // Deduct additional bet for second hand
+              bet: player.bet // Each hand has the same bet amount
+            }
+          : player
+      )
+    }));
+
+    setGameMessage('Hand split! Playing first hand...');
+    setTimeout(() => setGameMessage(''), 3000);
   }
 
   const playDealerTurn = () => {
@@ -301,6 +404,93 @@ export function SinglePlayerPage() {
     // Debug logging
     console.log('=== GAME END DEBUG ===')
     console.log('endGame called with finalDealer:', finalDealer ? 'YES' : 'NO')
+
+    // Handle split hands
+    if (currentPlayer.splitHands && currentPlayer.splitHands.length > 0) {
+      console.log('Processing split hands...')
+      let totalPayout = 0;
+      let results: string[] = [];
+
+      for (let i = 0; i < currentPlayer.splitHands.length; i++) {
+        const splitHand = currentPlayer.splitHands[i];
+        const handPayout = BlackjackEngine.calculatePayout(currentPlayer.bet, splitHand, dealerToUse.hand);
+        const handResult = BlackjackEngine.determineWinner(splitHand, dealerToUse.hand);
+
+        totalPayout += handPayout;
+        results.push(`Hand ${i + 1}: ${handResult} (${splitHand.value})`);
+
+        console.log(`Split Hand ${i + 1}:`, {
+          cards: splitHand.cards.map(c => c.rank),
+          value: splitHand.value,
+          result: handResult,
+          payout: handPayout
+        });
+      }
+
+      console.log('Total split payout:', totalPayout);
+      console.log('Split results:', results);
+
+      const newChips = currentPlayer.chips + totalPayout;
+
+      // Update session stats for split hands
+      let handsWon = 0;
+      let handsLost = 0;
+      let handsPushed = 0;
+      let playerBlackjacks = 0;
+      let dealerBlackjacks = 0;
+
+      for (const splitHand of currentPlayer.splitHands) {
+        const handResult = BlackjackEngine.determineWinner(splitHand, dealerToUse.hand);
+        if (handResult === 'player') handsWon++;
+        else if (handResult === 'dealer') handsLost++;
+        else handsPushed++;
+
+        if (splitHand.isBlackjack) playerBlackjacks++;
+        if (dealerToUse.hand.isBlackjack) dealerBlackjacks++;
+      }
+
+      const handsPlayed = sessionStats.handsPlayed + currentPlayer.splitHands.length;
+      const totalHandsWon = sessionStats.handsWon + handsWon;
+
+      const newStats = {
+        ...sessionStats,
+        handsPlayed,
+        handsWon: totalHandsWon,
+        handsLost: sessionStats.handsLost + handsLost,
+        handsPushed: sessionStats.handsPushed + handsPushed,
+        totalWagered: sessionStats.totalWagered + (currentPlayer.bet * currentPlayer.splitHands.length),
+        netWinnings: sessionStats.netWinnings + (totalPayout - (currentPlayer.bet * currentPlayer.splitHands.length)),
+        winRate: handsPlayed > 0 ? (totalHandsWon / handsPlayed) * 100 : 0,
+        playerBlackjacks: (sessionStats.playerBlackjacks || 0) + playerBlackjacks,
+        dealerBlackjacks: (sessionStats.dealerBlackjacks || 0) + dealerBlackjacks
+      };
+
+      setSessionStats(newStats);
+      localStorage.setItem('blackjack-session', JSON.stringify(newStats));
+
+      setGameMessage(`Split complete! ${results.join(', ')}`);
+
+      // Clear split hands and reset to normal play
+      setGameState(prev => ({
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? {
+                ...player,
+                chips: newChips,
+                splitHands: undefined,
+                currentHandIndex: undefined,
+                hand: BlackjackEngine.createHand() // Reset to empty hand
+              }
+            : player
+        ),
+        gamePhase: 'game-over' as const
+      }));
+
+      return; // Exit early for split hands
+    }
+
+    // Regular single hand processing
     console.log('Player hand:', {
       cards: currentPlayer.hand.cards,
       value: currentPlayer.hand.value,
