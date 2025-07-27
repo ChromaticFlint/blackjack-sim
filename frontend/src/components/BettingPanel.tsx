@@ -22,7 +22,6 @@ interface BettingPanelProps {
   gamePhase: string
   sessionStats?: SessionStats
   autoPlay?: boolean
-  onAutoPlayChange?: (enabled: boolean) => void
   lastBetAmount?: number
   autoPlayCountdown?: number
 }
@@ -39,7 +38,6 @@ export function BettingPanel({
   gamePhase,
   sessionStats,
   autoPlay = false,
-  onAutoPlayChange,
   lastBetAmount = 0,
   autoPlayCountdown = 0
 }: BettingPanelProps) {
@@ -154,16 +152,7 @@ export function BettingPanel({
             </div>
           </div>
 
-          <div className="auto-play-section">
-            <label className="auto-play-checkbox">
-              <input
-                type="checkbox"
-                checked={autoPlay}
-                onChange={(e) => onAutoPlayChange?.(e.target.checked)}
-              />
-              Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : '(place bet first)'}
-            </label>
-          </div>
+
 
           <button
             className="btn btn-primary place-bet-btn"

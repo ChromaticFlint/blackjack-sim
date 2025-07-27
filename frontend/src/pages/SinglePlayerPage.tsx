@@ -7,6 +7,7 @@ import { DealerHand } from '../components/DealerHand'
 import { GameControls } from '../components/GameControls'
 // import { OddsCheatSheet } from '../components/OddsCheatSheet'
 import { BettingPanel } from '../components/BettingPanel'
+import { GameControlsPanel } from '../components/GameControlsPanel'
 
 export function SinglePlayerPage() {
   const [gameState, setGameState] = useState<GameState>(() => {
@@ -441,8 +442,18 @@ export function SinglePlayerPage() {
     <div className="single-player-page">
       <div className="game-layout">
         {isMobile ? (
-          // Mobile Layout: Betting panel at top, then game table
+          // Mobile Layout: Controls panel, betting panel, then game table
           <>
+            <div className="mobile-controls-section">
+              <GameControlsPanel
+                autoPlay={autoPlay}
+                onAutoPlayChange={setAutoPlay}
+                lastBetAmount={lastBetAmount}
+                sessionStats={sessionStats}
+                onResetSession={resetSession}
+                gamePhase={gameState.gamePhase}
+              />
+            </div>
             <div className="mobile-betting-section">
               <BettingPanel
                 chips={currentPlayer.chips}
@@ -456,7 +467,6 @@ export function SinglePlayerPage() {
                 gamePhase={gameState.gamePhase}
                 sessionStats={sessionStats}
                 autoPlay={autoPlay}
-                onAutoPlayChange={setAutoPlay}
                 lastBetAmount={lastBetAmount}
                 autoPlayCountdown={autoPlayCountdown}
               />
@@ -510,8 +520,19 @@ export function SinglePlayerPage() {
             </GameTable>
           </>
         ) : (
-          // Desktop Layout: Original layout with betting panel on right
+          // Desktop Layout: Left controls panel, betting panel on right
           <GameTable>
+            <div className="game-controls-panel">
+              <GameControlsPanel
+                autoPlay={autoPlay}
+                onAutoPlayChange={setAutoPlay}
+                lastBetAmount={lastBetAmount}
+                sessionStats={sessionStats}
+                onResetSession={resetSession}
+                gamePhase={gameState.gamePhase}
+              />
+            </div>
+
             <div className="betting-section">
               <BettingPanel
                 chips={currentPlayer.chips}
@@ -525,7 +546,6 @@ export function SinglePlayerPage() {
                 gamePhase={gameState.gamePhase}
                 sessionStats={sessionStats}
                 autoPlay={autoPlay}
-                onAutoPlayChange={setAutoPlay}
                 lastBetAmount={lastBetAmount}
                 autoPlayCountdown={autoPlayCountdown}
               />
