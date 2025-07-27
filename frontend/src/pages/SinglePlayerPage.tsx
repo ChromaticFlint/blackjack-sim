@@ -8,6 +8,7 @@ import { GameControls } from '../components/GameControls'
 // import { OddsCheatSheet } from '../components/OddsCheatSheet'
 import { BettingPanel } from '../components/BettingPanel'
 import { GameControlsPanel } from '../components/GameControlsPanel'
+import { GameMessagePanel } from '../components/GameMessagePanel'
 
 export function SinglePlayerPage() {
   const [gameState, setGameState] = useState<GameState>(() => {
@@ -874,6 +875,10 @@ export function SinglePlayerPage() {
               />
             </div>
             <div className="mobile-betting-section">
+              <GameMessagePanel
+                message={gameMessage}
+                gamePhase={gameState.gamePhase}
+              />
               <BettingPanel
                 chips={currentPlayer.chips}
                 currentBet={currentPlayer.bet}
@@ -896,11 +901,7 @@ export function SinglePlayerPage() {
                 hideSecondCard={gameState.gamePhase === 'playing'}
               />
 
-              <div className="game-center">
-                {gameMessage && (
-                  <div className="game-message">{gameMessage}</div>
-                )}
-              </div>
+
 
               <PlayerHand
                 player={currentPlayer}
@@ -934,6 +935,10 @@ export function SinglePlayerPage() {
             </div>
 
             <div className="betting-section">
+              <GameMessagePanel
+                message={gameMessage}
+                gamePhase={gameState.gamePhase}
+              />
               <BettingPanel
                 chips={currentPlayer.chips}
                 currentBet={currentPlayer.bet}
@@ -956,11 +961,7 @@ export function SinglePlayerPage() {
               hideSecondCard={gameState.gamePhase === 'playing'}
             />
 
-            <div className="game-center">
-              {gameMessage && (
-                <div className="game-message">{gameMessage}</div>
-              )}
-            </div>
+
 
             <PlayerHand
               player={currentPlayer}

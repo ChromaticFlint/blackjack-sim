@@ -1059,6 +1059,99 @@ body {
   50% { opacity: 0.7; }
 }
 
+/* Game Message Panel */
+.game-message-panel {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #64748b;
+  margin-bottom: 1rem;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-panel-header {
+  margin-bottom: 1rem;
+}
+
+.message-panel-header h3 {
+  color: #f8fafc;
+  margin: 0;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.message-panel-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.game-message-display {
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  width: 100%;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+.game-message-display.win {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid #10b981;
+}
+
+.game-message-display.lose {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.game-message-display.push {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid #fbbf24;
+}
+
+.game-message-display.split {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
+}
+
+.game-message-display.auto-play {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.game-message-display.info {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+  border: 1px solid #6b7280;
+}
+
+.game-message-placeholder {
+  color: #64748b;
+  font-style: italic;
+  font-size: 1rem;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Betting Panel */
 .betting-panel {
   background: linear-gradient(135deg, #334155 0%, #475569 100%);
