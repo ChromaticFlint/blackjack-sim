@@ -140,20 +140,21 @@ export function SinglePlayerPage() {
       }
 
       console.log('After bet placement - New chips:', updatedState.players[0].chips)
+
+      // Auto-deal after betting using the updated state
+      setTimeout(() => dealInitialCardsWithState(updatedState), 500)
+
       return updatedState
     })
-
-    // Auto-deal after betting
-    setTimeout(() => dealInitialCards(), 500)
   }
 
-  const dealInitialCards = () => {
-    let newDeck = [...gameState.deck]
-    // Use the current player from gameState to ensure we have the latest state with bet deducted
-    let newPlayer = { ...gameState.players[gameState.currentPlayerIndex] }
-    let newDealer = { ...gameState.dealer }
+  const dealInitialCardsWithState = (currentGameState: typeof gameState) => {
+    let newDeck = [...currentGameState.deck]
+    // Use the passed state to ensure we have the correct state with bet deducted
+    let newPlayer = { ...currentGameState.players[currentGameState.currentPlayerIndex] }
+    let newDealer = { ...currentGameState.dealer }
 
-    console.log('Deal Initial Cards - Player chips:', newPlayer.chips, 'bet:', newPlayer.bet)
+    console.log('Deal Initial Cards With State - Player chips:', newPlayer.chips, 'bet:', newPlayer.bet)
 
     // Deal two cards to player
     const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
@@ -178,7 +179,7 @@ export function SinglePlayerPage() {
       players: [newPlayer],
       dealer: newDealer,
       deck: newDeck,
-      gamePhase: 'playing'
+      gamePhase: 'playing' as const
     }))
 
     // Check for blackjacks
@@ -189,11 +190,14 @@ export function SinglePlayerPage() {
         players: [newPlayer],
         dealer: newDealer,
         deck: newDeck,
-        gamePhase: 'game-over' // Change to game-over to reveal dealer cards
+        gamePhase: 'game-over' as const
       }))
       setTimeout(() => endGame(newDealer), 1000)
     }
   }
+
+
+
 
   const hit = () => {
     if (gameState.gamePhase !== 'playing') return
