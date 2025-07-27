@@ -92,24 +92,62 @@ export class BlackjackEngine {
   }
 
   static determineWinner(playerHand: Hand, dealerHand: Hand): 'player' | 'dealer' | 'push' {
+    console.log('=== WIN CONDITION ANALYSIS ===');
+    console.log('Player:', {
+      value: playerHand.value,
+      cards: playerHand.cards.length,
+      isBusted: playerHand.isBusted,
+      isBlackjack: playerHand.isBlackjack,
+      cardValues: playerHand.cards.map(c => c.rank)
+    });
+    console.log('Dealer:', {
+      value: dealerHand.value,
+      cards: dealerHand.cards.length,
+      isBusted: dealerHand.isBusted,
+      isBlackjack: dealerHand.isBlackjack,
+      cardValues: dealerHand.cards.map(c => c.rank)
+    });
+
     // Rule 1: If player busts, dealer wins (regardless of dealer's hand)
-    if (playerHand.isBusted) return 'dealer';
+    if (playerHand.isBusted) {
+      console.log('Result: DEALER WINS (player busted)');
+      return 'dealer';
+    }
 
     // Rule 2: If dealer busts and player doesn't, player wins
-    if (dealerHand.isBusted) return 'player';
+    if (dealerHand.isBusted) {
+      console.log('Result: PLAYER WINS (dealer busted)');
+      return 'player';
+    }
 
     // Rule 3: Blackjack vs non-blackjack
-    if (playerHand.isBlackjack && !dealerHand.isBlackjack) return 'player';
-    if (dealerHand.isBlackjack && !playerHand.isBlackjack) return 'dealer';
+    if (playerHand.isBlackjack && !dealerHand.isBlackjack) {
+      console.log('Result: PLAYER WINS (player blackjack vs dealer non-blackjack)');
+      return 'player';
+    }
+    if (dealerHand.isBlackjack && !playerHand.isBlackjack) {
+      console.log('Result: DEALER WINS (dealer blackjack vs player non-blackjack)');
+      return 'dealer';
+    }
 
     // Rule 4: Both have blackjack = push
-    if (playerHand.isBlackjack && dealerHand.isBlackjack) return 'push';
+    if (playerHand.isBlackjack && dealerHand.isBlackjack) {
+      console.log('Result: PUSH (both have blackjack)');
+      return 'push';
+    }
 
     // Rule 5: Compare point totals (neither busted, neither has blackjack advantage)
-    if (playerHand.value > dealerHand.value) return 'player';
-    if (dealerHand.value > playerHand.value) return 'dealer';
+    if (playerHand.value > dealerHand.value) {
+      console.log(`Result: PLAYER WINS (${playerHand.value} vs ${dealerHand.value})`);
+      return 'player';
+    }
+    if (dealerHand.value > playerHand.value) {
+      console.log(`Result: DEALER WINS (${dealerHand.value} vs ${playerHand.value})`);
+      return 'dealer';
+    }
 
     // Rule 6: Same point total = push
+    console.log(`Result: PUSH (both have ${playerHand.value})`);
     return 'push';
   }
 
