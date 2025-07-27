@@ -718,6 +718,22 @@ export function SinglePlayerPage() {
       setAutoPlay(false)
       setGameMessage('Auto-play disabled: insufficient chips')
       setTimeout(() => setGameMessage(''), 3000)
+    } else if (autoPlay && lastBetAmount === 0) {
+      // Disable auto-play if no previous bet amount
+      setAutoPlay(false)
+      setGameMessage('Auto-play disabled: no previous bet amount')
+      setTimeout(() => setGameMessage(''), 3000)
+    } else if (autoPlay) {
+      // Fallback: If auto-play is enabled but didn't continue for any other reason, disable it
+      console.warn('Auto-play enabled but failed to continue. Disabling auto-play.', {
+        autoPlay,
+        lastBetAmount,
+        newChips,
+        canAfford: newChips >= lastBetAmount
+      })
+      setAutoPlay(false)
+      setGameMessage('Auto-play disabled: unexpected error')
+      setTimeout(() => setGameMessage(''), 3000)
     }
   }
 

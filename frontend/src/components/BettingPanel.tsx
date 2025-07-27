@@ -142,6 +142,21 @@ export function BettingPanel({
         </div>
       )}
 
+      {/* Fallback: Show New Game button if auto-play is enabled but can't continue */}
+      {gamePhase === 'game-over' && autoPlay && lastBetAmount === 0 && (
+        <div>
+          <div className="auto-play-message error">
+            Auto-play disabled: No previous bet amount
+          </div>
+          <button
+            className="btn btn-primary new-game-btn"
+            onClick={onNewGame}
+          >
+            New Game
+          </button>
+        </div>
+      )}
+
       {/* Auto-Play Controls */}
       <div className="auto-play-section">
         <h4>Auto-Play</h4>
