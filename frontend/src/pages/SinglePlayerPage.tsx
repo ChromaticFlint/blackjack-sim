@@ -124,7 +124,14 @@ export function SinglePlayerPage() {
 
     // Check for blackjacks
     if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
-      // If either player has blackjack, game ends immediately (no dealer play)
+      // If either player has blackjack, reveal dealer's cards and end game
+      setGameState(prev => ({
+        ...prev,
+        players: [newPlayer],
+        dealer: newDealer,
+        deck: newDeck,
+        gamePhase: 'game-over' // Change to game-over to reveal dealer cards
+      }))
       setTimeout(() => endGame(newDealer), 1000)
     }
   }
