@@ -4,14 +4,17 @@
   "description": "A modern blackjack simulation game with single and multiplayer modes",
   "private": true,
   "workspaces": [
-    "frontend"
+    "frontend",
+    "backend"
   ],
   "scripts": {
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "preview": "cd frontend && npm run preview",
-    "install:all": "npm install && cd frontend && npm install",
-    "setup": "npm run install:all"
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "setup": "npm run install:all",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
