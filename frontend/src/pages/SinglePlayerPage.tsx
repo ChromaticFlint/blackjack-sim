@@ -313,8 +313,13 @@ export function SinglePlayerPage() {
 
     const result = BlackjackEngine.determineWinner(currentPlayer.hand, dealerToUse.hand)
 
+    console.log('=== PAYOUT CALCULATION ===')
+    console.log('Player hand:', currentPlayer.hand.value, 'cards:', currentPlayer.hand.cards.length)
+    console.log('Dealer hand:', dealerToUse.hand.value, 'cards:', dealerToUse.hand.cards.length)
+    console.log('Bet amount:', currentPlayer.bet)
     console.log('Result:', result)
     console.log('Payout:', payout)
+    console.log('Expected for win: bet + bet =', currentPlayer.bet + currentPlayer.bet)
     console.log('========================')
     
     let message = ''
@@ -433,14 +438,16 @@ export function SinglePlayerPage() {
         let newDeck = [...deck]
 
         // Create new player with bet already placed
+        console.log('Auto-play: Creating new player with chips:', newChips, 'bet:', lastBetAmount)
         const newPlayer: Player = {
           ...currentPlayer,
           hand: BlackjackEngine.createHand(),
           bet: lastBetAmount,
-          chips: newChips - lastBetAmount, // Deduct the bet
+          chips: newChips - lastBetAmount, // Deduct the bet from the updated chips
           hasDoubledDown: false,
           hasStood: false
         }
+        console.log('Auto-play: New player chips after bet:', newPlayer.chips)
 
         // Deal player cards
         const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
