@@ -314,34 +314,70 @@ export function SinglePlayerPage() {
       }, 1000)
 
       setTimeout(() => {
-        // Reset game state and immediately place bet + deal
+        // Reset game state and immediately deal next hand
         const deck = BlackjackEngine.createDeck()
+
+        // Directly deal the next hand with the same bet
+        let newDeck = [...deck]
+
+        // Create new player with bet already placed
+        const newPlayer: Player = {
+          ...currentPlayer,
+          hand: BlackjackEngine.createHand(),
+          bet: lastBetAmount,
+          chips: newChips - lastBetAmount, // Deduct the bet
+          hasDoubledDown: false,
+          hasStood: false
+        }
+
+        // Deal player cards
+        const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+        newDeck = playerCard1.newDeck
+        newPlayer.hand = playerCard1.newHand
+
+        const playerCard2 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+        newDeck = playerCard2.newDeck
+        newPlayer.hand = playerCard2.newHand
+
+        // Create new dealer
+        const newDealer: Player = {
+          ...gameState.dealer,
+          hand: BlackjackEngine.createHand()
+        }
+
+        // Deal dealer cards
+        const dealerCard1 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
+        newDeck = dealerCard1.newDeck
+        newDealer.hand = dealerCard1.newHand
+
+        const dealerCard2 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
+        newDeck = dealerCard2.newDeck
+        newDealer.hand = dealerCard2.newHand
 
         setGameState(prev => ({
           ...prev,
-          players: prev.players.map(player => ({
-            ...player,
-            hand: BlackjackEngine.createHand(),
-            bet: 0,
-            hasDoubledDown: false,
-            hasStood: false
-          })),
-          dealer: {
-            ...prev.dealer,
-            hand: BlackjackEngine.createHand()
-          },
-          deck,
-          gamePhase: 'betting'
+          players: [newPlayer],
+          dealer: newDealer,
+          deck: newDeck,
+          gamePhase: 'playing' // Go directly to playing phase
         }))
 
         setGameMessage('')
         setOdds(null)
         setAutoPlayCountdown(0)
 
-        // Immediately place bet and deal next hand
-        setTimeout(() => {
-          placeBet(lastBetAmount)
-        }, 100)
+        // Check for blackjacks
+        if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
+          // If either player has blackjack, reveal dealer's cards and end game
+          setGameState(prev => ({
+            ...prev,
+            players: [newPlayer],
+            dealer: newDealer,
+            deck: newDeck,
+            gamePhase: 'game-over' // Change to game-over to reveal dealer cards
+          }))
+          setTimeout(() => endGame(newDealer), 1000)
+        }
       }, 2000) // Wait 2 seconds to show results, then auto-start next hand
     } else if (autoPlay && newChips < lastBetAmount) {
       // Disable auto-play if not enough chips
