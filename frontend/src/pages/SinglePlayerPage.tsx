@@ -631,14 +631,26 @@ export function SinglePlayerPage() {
     })
 
     // Auto-play: automatically start next hand if enabled
-    console.log('Auto-play check:', { autoPlay, lastBetAmount, newChips, canAfford: newChips >= lastBetAmount })
-    if (autoPlay && lastBetAmount > 0 && newChips >= lastBetAmount) {
-      // Start countdown
+    console.log('=== AUTO-PLAY CHECK ===')
+    console.log('Auto-play state:', {
+      autoPlay,
+      lastBetAmount,
+      newChips,
+      canAfford: newChips >= lastBetAmount,
+      gamePhase: gameState.gamePhase,
+      currentCountdown: autoPlayCountdown
+    })
+
+    if (autoPlay && lastBetAmount > 0 && newChips >= lastBetAmount && autoPlayCountdown === 0) {
+      console.log('✅ Auto-play conditions met, starting countdown...')
+      // Start countdown (only if not already counting down)
       setAutoPlayCountdown(2)
       const countdownInterval = setInterval(() => {
         setAutoPlayCountdown(prev => {
+          console.log('Auto-play countdown:', prev)
           if (prev <= 1) {
             clearInterval(countdownInterval)
+            console.log('Auto-play countdown finished, starting new hand...')
             return 0
           }
           return prev - 1
@@ -646,72 +658,97 @@ export function SinglePlayerPage() {
       }, 1000)
 
       setTimeout(() => {
-        // Reset game state and immediately deal next hand
-        const deck = BlackjackEngine.createDeck()
+        console.log('=== AUTO-PLAY TIMEOUT EXECUTING ===')
 
-        // Directly deal the next hand with the same bet
-        let newDeck = [...deck]
+        // Check if auto-play is still enabled and conditions are still met
+        setGameState(currentGameState => {
+          const currentPlayerFromState = currentGameState.players[currentGameState.currentPlayerIndex]
 
-        // Create new player with bet already placed
-        console.log('Auto-play: Creating new player with chips:', newChips, 'bet:', lastBetAmount)
-        const newPlayer: Player = {
-          ...currentPlayer,
-          hand: BlackjackEngine.createHand(),
-          bet: lastBetAmount,
-          chips: newChips - lastBetAmount, // Deduct the bet from the updated chips
-          hasDoubledDown: false,
-          hasStood: false
-        }
-        console.log('Auto-play: New player chips after bet:', newPlayer.chips)
+          console.log('Auto-play timeout check:', {
+            autoPlayStillEnabled: autoPlay,
+            gamePhase: currentGameState.gamePhase,
+            playerChips: currentPlayerFromState.chips,
+            lastBetAmount,
+            canAfford: currentPlayerFromState.chips >= lastBetAmount
+          })
 
-        // Deal player cards
-        const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
-        newDeck = playerCard1.newDeck
-        newPlayer.hand = playerCard1.newHand
+          // Verify auto-play should still continue
+          if (!autoPlay || lastBetAmount === 0 || currentPlayerFromState.chips < lastBetAmount) {
+            console.log('❌ Auto-play conditions no longer met, aborting auto-play')
+            setAutoPlay(false)
+            setAutoPlayCountdown(0)
+            return currentGameState // Don't change game state
+          }
 
-        const playerCard2 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
-        newDeck = playerCard2.newDeck
-        newPlayer.hand = playerCard2.newHand
+          // Reset game state and immediately deal next hand
+          const deck = BlackjackEngine.createDeck()
+          let newDeck = [...deck]
 
-        // Create new dealer
-        const newDealer: Player = {
-          ...gameState.dealer,
-          hand: BlackjackEngine.createHand()
-        }
+          // Create new player with bet already placed
+          console.log('Auto-play: Creating new player with chips:', currentPlayerFromState.chips, 'bet:', lastBetAmount)
+          const newPlayer: Player = {
+            ...currentPlayerFromState,
+            hand: BlackjackEngine.createHand(),
+            bet: lastBetAmount,
+            chips: currentPlayerFromState.chips - lastBetAmount, // Deduct the bet from current chips
+            hasDoubledDown: false,
+            hasStood: false
+          }
+          console.log('Auto-play: New player chips after bet:', newPlayer.chips)
 
-        // Deal dealer cards
-        const dealerCard1 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
-        newDeck = dealerCard1.newDeck
-        newDealer.hand = dealerCard1.newHand
+          // Deal player cards
+          const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+          newDeck = playerCard1.newDeck
+          newPlayer.hand = playerCard1.newHand
 
-        const dealerCard2 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
-        newDeck = dealerCard2.newDeck
-        newDealer.hand = dealerCard2.newHand
+          const playerCard2 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+          newDeck = playerCard2.newDeck
+          newPlayer.hand = playerCard2.newHand
 
-        setGameState(prev => ({
-          ...prev,
-          players: [newPlayer],
-          dealer: newDealer,
-          deck: newDeck,
-          gamePhase: 'playing' // Go directly to playing phase
-        }))
+          // Create new dealer
+          const newDealer: Player = {
+            ...currentGameState.dealer,
+            hand: BlackjackEngine.createHand()
+          }
 
-        setGameMessage('')
-        setOdds(null)
-        setAutoPlayCountdown(0)
+          // Deal dealer cards
+          const dealerCard1 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
+          newDeck = dealerCard1.newDeck
+          newDealer.hand = dealerCard1.newHand
 
-        // Check for blackjacks
-        if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
-          // If either player has blackjack, reveal dealer's cards and end game
-          setGameState(prev => ({
-            ...prev,
+          const dealerCard2 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
+          newDealer.hand = dealerCard2.newHand
+
+          // Create the new game state
+          const newGameState = {
+            ...currentGameState,
             players: [newPlayer],
             dealer: newDealer,
             deck: newDeck,
-            gamePhase: 'game-over' // Change to game-over to reveal dealer cards
-          }))
-          setTimeout(() => endGame(newDealer), 1000)
-        }
+            gamePhase: 'playing' as const // Go directly to playing phase
+          }
+
+          console.log('✅ Auto-play: New game state created, returning to React')
+
+          // Reset other state outside of setGameState
+          setTimeout(() => {
+            setGameMessage('')
+            setOdds(null)
+            setAutoPlayCountdown(0)
+
+            // Check for blackjacks after state is set
+            if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
+              console.log('Auto-play: Blackjack detected, ending game immediately')
+              setGameState(prev => ({
+                ...prev,
+                gamePhase: 'game-over' as const
+              }))
+              setTimeout(() => endGame(newDealer), 1000)
+            }
+          }, 100) // Small delay to ensure state is updated
+
+          return newGameState
+        }) // End of setGameState callback
       }, 2000) // Wait 2 seconds to show results, then auto-start next hand
     } else if (autoPlay && newChips < lastBetAmount) {
       // Disable auto-play if not enough chips
