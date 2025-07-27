@@ -63,7 +63,7 @@ export function SinglePlayerPage() {
   // const [showStrategy, setShowStrategy] = useState(true)
   const [sessionStats, setSessionStats] = useState(() => {
     const saved = localStorage.getItem('blackjack-session')
-    return saved ? JSON.parse(saved) : {
+    const defaultStats = {
       handsPlayed: 0,
       handsWon: 0,
       handsLost: 0,
@@ -75,6 +75,20 @@ export function SinglePlayerPage() {
       dealerBlackjacks: 0,
       startingChips: parseInt(localStorage.getItem('blackjack-chips') || '1000')
     }
+
+    if (saved) {
+      const parsedStats = JSON.parse(saved)
+      // Migrate old session stats to include new properties
+      return {
+        ...defaultStats,
+        ...parsedStats,
+        playerBlackjacks: parsedStats.playerBlackjacks || 0,
+        dealerBlackjacks: parsedStats.dealerBlackjacks || 0,
+        winRate: parsedStats.winRate || 0
+      }
+    }
+
+    return defaultStats
   })
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
@@ -96,6 +110,7 @@ export function SinglePlayerPage() {
   const placeBet = (amount: number) => {
     if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) return
 
+    console.log('Placing bet:', amount)
     setLastBetAmount(amount) // Track the last bet for auto-play
 
     setGameState(prev => ({
@@ -315,9 +330,22 @@ export function SinglePlayerPage() {
       totalWagered: sessionStats.totalWagered + currentPlayer.bet,
       netWinnings: sessionStats.netWinnings + (payout - currentPlayer.bet),
       winRate: handsPlayed > 0 ? (handsWon / handsPlayed) * 100 : 0,
-      playerBlackjacks: sessionStats.playerBlackjacks + (playerHasBlackjack ? 1 : 0),
-      dealerBlackjacks: sessionStats.dealerBlackjacks + (dealerHasBlackjack ? 1 : 0)
+      playerBlackjacks: (sessionStats.playerBlackjacks || 0) + (playerHasBlackjack ? 1 : 0),
+      dealerBlackjacks: (sessionStats.dealerBlackjacks || 0) + (dealerHasBlackjack ? 1 : 0)
     }
+
+    // Debug session stats
+    console.log('Session Stats Update:', {
+      bet: currentPlayer.bet,
+      payout,
+      result,
+      oldNetWinnings: sessionStats.netWinnings,
+      newNetWinnings: newStats.netWinnings,
+      oldPlayerBJ: sessionStats.playerBlackjacks,
+      newPlayerBJ: newStats.playerBlackjacks,
+      oldDealerBJ: sessionStats.dealerBlackjacks,
+      newDealerBJ: newStats.dealerBlackjacks
+    })
 
     setSessionStats(newStats)
 
@@ -336,6 +364,7 @@ export function SinglePlayerPage() {
     }))
 
     // Auto-play: automatically start next hand if enabled
+    console.log('Auto-play check:', { autoPlay, lastBetAmount, newChips, canAfford: newChips >= lastBetAmount })
     if (autoPlay && lastBetAmount > 0 && newChips >= lastBetAmount) {
       // Start countdown
       setAutoPlayCountdown(2)
