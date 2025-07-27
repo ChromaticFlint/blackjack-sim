@@ -159,14 +159,8 @@ export function BettingPanel({
                 checked={autoPlay}
                 onChange={(e) => onAutoPlayChange?.(e.target.checked)}
               />
-              <span className="checkmark"></span>
-              Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : ''}
+              Auto-play {lastBetAmount > 0 ? `($${lastBetAmount})` : '(place bet first)'}
             </label>
-            {autoPlay && lastBetAmount > 0 && (
-              <div className="auto-play-info">
-                Will automatically repeat ${lastBetAmount} bets
-              </div>
-            )}
           </div>
 
           <button
