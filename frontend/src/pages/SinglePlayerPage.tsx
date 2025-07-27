@@ -303,6 +303,16 @@ export function SinglePlayerPage() {
 
     const newChips = currentPlayer.chips + payout
 
+    // Debug chip calculation
+    console.log('Chip Calculation:', {
+      currentChips: currentPlayer.chips,
+      bet: currentPlayer.bet,
+      payout,
+      newChips,
+      result,
+      shouldGain: result === 'player' ? currentPlayer.bet : 0
+    })
+
     // Update session stats
     const handsPlayed = sessionStats.handsPlayed + 1
     const handsWon = result === 'player' ? sessionStats.handsWon + 1 : sessionStats.handsWon
@@ -353,15 +363,25 @@ export function SinglePlayerPage() {
     localStorage.setItem('blackjack-chips', newChips.toString())
     localStorage.setItem('blackjack-session', JSON.stringify(newStats))
 
-    setGameState(prev => ({
-      ...prev,
-      players: prev.players.map(player =>
-        player.id === currentPlayer.id
-          ? { ...player, chips: newChips }
-          : player
-      ),
-      gamePhase: 'game-over'
-    }))
+    setGameState(prev => {
+      const updatedState = {
+        ...prev,
+        players: prev.players.map(player =>
+          player.id === currentPlayer.id
+            ? { ...player, chips: newChips }
+            : player
+        ),
+        gamePhase: 'game-over' as const
+      }
+
+      console.log('Game State Update:', {
+        oldChips: currentPlayer.chips,
+        newChips,
+        updatedPlayerChips: updatedState.players[0].chips
+      })
+
+      return updatedState
+    })
 
     // Auto-play: automatically start next hand if enabled
     console.log('Auto-play check:', { autoPlay, lastBetAmount, newChips, canAfford: newChips >= lastBetAmount })
