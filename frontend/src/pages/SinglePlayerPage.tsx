@@ -453,6 +453,15 @@ export function SinglePlayerPage() {
       isBusted: dealerToUse.hand.isBusted
     })
 
+    // CRITICAL: Double-check bust calculation manually
+    const manualBustCheck = currentPlayerFromState.hand.value > 21
+    console.log('🚨 MANUAL BUST CHECK:', {
+      handValue: currentPlayerFromState.hand.value,
+      isBustedProperty: currentPlayerFromState.hand.isBusted,
+      manualBustCheck: manualBustCheck,
+      SHOULD_LOSE: manualBustCheck ? 'YES - PLAYER BUSTED' : 'NO - PLAYER NOT BUSTED'
+    })
+
     // Handle split hands
     if (currentPlayerFromState.splitHands && currentPlayerFromState.splitHands.length > 0) {
       console.log('Processing split hands...')
@@ -566,7 +575,24 @@ export function SinglePlayerPage() {
       dealerToUse.hand
     )
 
+    // CRITICAL DEBUG: Check what we're passing to determineWinner
+    console.log('🚨 ABOUT TO CALL determineWinner WITH:')
+    console.log('Player hand being passed:', {
+      value: currentPlayerFromState.hand.value,
+      isBusted: currentPlayerFromState.hand.isBusted,
+      cards: currentPlayerFromState.hand.cards.map(c => c.rank),
+      cardCount: currentPlayerFromState.hand.cards.length
+    })
+    console.log('Dealer hand being passed:', {
+      value: dealerToUse.hand.value,
+      isBusted: dealerToUse.hand.isBusted,
+      cards: dealerToUse.hand.cards.map(c => c.rank),
+      cardCount: dealerToUse.hand.cards.length
+    })
+
     const result = BlackjackEngine.determineWinner(currentPlayerFromState.hand, dealerToUse.hand)
+
+    console.log('🎯 determineWinner RETURNED:', result)
 
     console.log('=== PAYOUT CALCULATION ===')
     console.log('Player hand:', currentPlayerFromState.hand.value, 'cards:', currentPlayerFromState.hand.cards.length)
