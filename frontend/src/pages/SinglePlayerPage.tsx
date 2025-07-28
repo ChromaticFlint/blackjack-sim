@@ -233,7 +233,10 @@ export function SinglePlayerPage() {
       }))
 
       if (result.newHand.isBusted) {
-        console.log('Split hand', handIndex + 1, 'busted! Moving to next hand...')
+        console.log('🚨 Split hand', handIndex + 1, 'busted! Moving to next hand...')
+        console.log('Split hand value:', result.newHand.value)
+        console.log('Split hand cards:', result.newHand.cards.map(c => c.rank))
+        console.log('Split hand isBusted:', result.newHand.isBusted)
         setTimeout(() => moveToNextSplitHand(), 1000)
       } else {
         console.log('Split hand', handIndex + 1, 'did not bust, continuing...')
@@ -258,8 +261,12 @@ export function SinglePlayerPage() {
       }))
 
       if (result.newHand.isBusted) {
-        console.log('Player busted! Ending game...')
-        setTimeout(() => endGame(gameState.dealer), 1000)
+        console.log('🚨 Player busted on hit! Ending game...')
+        console.log('Player hand value:', result.newHand.value)
+        console.log('Player cards:', result.newHand.cards.map(c => c.rank))
+        console.log('Player isBusted:', result.newHand.isBusted)
+        // Don't pass dealer state - let endGame get current state
+        setTimeout(() => endGame(), 1000)
       } else {
         console.log('Player did not bust, continuing...')
       }
@@ -432,11 +439,18 @@ export function SinglePlayerPage() {
     // Debug logging
     console.log('=== GAME END DEBUG ===')
     console.log('endGame called with finalDealer:', finalDealer ? 'YES' : 'NO')
+    console.log('🔍 BUST INVESTIGATION:')
     console.log('currentPlayer from closure vs state:', {
       closureValue: currentPlayer.hand.value,
       closureBusted: currentPlayer.hand.isBusted,
       stateValue: currentPlayerFromState.hand.value,
-      stateBusted: currentPlayerFromState.hand.isBusted
+      stateBusted: currentPlayerFromState.hand.isBusted,
+      stateCards: currentPlayerFromState.hand.cards.map(c => c.rank)
+    })
+    console.log('Dealer state:', {
+      value: dealerToUse.hand.value,
+      cards: dealerToUse.hand.cards.map(c => c.rank),
+      isBusted: dealerToUse.hand.isBusted
     })
 
     // Handle split hands
