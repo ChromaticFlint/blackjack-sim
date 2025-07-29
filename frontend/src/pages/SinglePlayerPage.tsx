@@ -356,13 +356,19 @@ export function SinglePlayerPage() {
     if (currentPlayer.chips < currentPlayer.bet) return
 
     const result = BlackjackEngine.dealCard(gameState.deck, currentPlayer.hand)
-    
+
+    console.log('=== DOUBLE DOWN RESULT ===')
+    console.log('New hand value:', result.newHand.value)
+    console.log('New hand isBusted:', result.newHand.isBusted)
+    console.log('Cards:', result.newHand.cards.map(c => c.rank))
+    console.log('Doubled bet from', currentPlayer.bet, 'to', currentPlayer.bet * 2)
+
     setGameState(prev => ({
       ...prev,
       players: prev.players.map(player =>
         player.id === currentPlayer.id
-          ? { 
-              ...player, 
+          ? {
+              ...player,
               hand: result.newHand,
               bet: player.bet * 2,
               chips: player.chips - player.bet,
@@ -370,13 +376,32 @@ export function SinglePlayerPage() {
             }
           : player
       ),
-      deck: result.newDeck,
-      gamePhase: 'dealer-turn'
+      deck: result.newDeck
+      // DON'T change gamePhase here - let the bust/stand logic handle it
     }))
 
     if (result.newHand.isBusted) {
-      setTimeout(() => endGame(gameState.dealer), 1000)
+      console.log('🚨 Player busted on double down! Ending game...')
+      console.log('Player hand value:', result.newHand.value)
+      console.log('Player cards:', result.newHand.cards.map(c => c.rank))
+      console.log('Player isBusted:', result.newHand.isBusted)
+
+      // CRITICAL FIX: Pass the busted player directly to avoid state timing issues
+      const bustedPlayer = {
+        ...currentPlayer,
+        hand: result.newHand,
+        bet: currentPlayer.bet * 2,
+        chips: currentPlayer.chips - currentPlayer.bet,
+        hasDoubledDown: true
+      }
+      setTimeout(() => endGame(undefined, bustedPlayer), 1000)
     } else {
+      console.log('Player did not bust on double down, moving to dealer turn...')
+      // Player stands automatically after double down
+      setGameState(prev => ({
+        ...prev,
+        gamePhase: 'dealer-turn' as const
+      }))
       setTimeout(() => playDealerTurn(), 1000)
     }
   }
