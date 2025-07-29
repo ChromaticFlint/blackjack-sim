@@ -28,6 +28,17 @@ export function GameControls({
   odds
 }: GameControlsProps) {
   const formatPercentage = (value: number) => `${value.toFixed(0)}%` // Value is already a percentage
+
+  // Debug logging for button visibility
+  console.log('🎮 GAME CONTROLS RENDER:', {
+    gamePhase,
+    canHit,
+    canStand,
+    canDoubleDown,
+    canSplit,
+    willShowButtons: gamePhase === 'playing'
+  })
+
   if (gamePhase === 'betting') {
     return (
       <div className="game-controls">

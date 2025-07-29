@@ -10,8 +10,11 @@ import { BettingPanel } from '../components/BettingPanel'
 import { GameControlsPanel } from '../components/GameControlsPanel'
 import { GameMessagePanel } from '../components/GameMessagePanel'
 
+const VERSION = "v2.1.0-debug-buttons";
+
 export function SinglePlayerPage() {
   const [gameState, setGameState] = useState<GameState>(() => {
+    console.log(`🎮 BLACKJACK SIMULATOR ${VERSION} - Initializing...`)
     const deck = BlackjackEngine.createDeck()
     // Try to load saved chips from localStorage
     const savedChips = localStorage.getItem('blackjack-chips')
@@ -225,14 +228,24 @@ export function SinglePlayerPage() {
     newDealer.hand = dealerCard2.newHand
 
     console.log('🎮 DEAL CARDS: Setting phase to playing')
-    setGameState(prev => ({
-      ...prev,
-      players: [newPlayer],
-      dealer: newDealer,
-      deck: newDeck,
-      gamePhase: 'playing' as const
-    }))
+    setGameState(prev => {
+      console.log('🎮 DEAL CARDS: Previous phase in setter:', prev.gamePhase)
+      const newState = {
+        ...prev,
+        players: [newPlayer],
+        dealer: newDealer,
+        deck: newDeck,
+        gamePhase: 'playing' as const
+      }
+      console.log('🎮 DEAL CARDS: New state phase:', newState.gamePhase)
+      return newState
+    })
     console.log('🎮 DEAL CARDS: Phase set to playing, buttons should appear')
+
+    // Force a re-render check
+    setTimeout(() => {
+      console.log('🎮 DEAL CARDS: Checking state after timeout - should be playing phase now')
+    }, 100)
 
     // Check for blackjacks
     if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
@@ -762,6 +775,8 @@ export function SinglePlayerPage() {
     }
 
     setGameMessage(message)
+
+    console.log(`🎮 GAME END - ${VERSION} - Result: ${result}, Payout: ${payout}`)
 
     const newChips = currentPlayerFromState.chips + payout
 
