@@ -704,13 +704,25 @@ export function SinglePlayerPage() {
     console.log('Expected for win: bet + bet =', currentPlayerFromState.bet + currentPlayerFromState.bet)
     console.log('========================')
 
+    // Calculate net gain/loss for the message
+    const netGain = payout - currentPlayerFromState.bet;
+    const gainText = netGain > 0 ? `+$${netGain}` : netGain < 0 ? `-$${Math.abs(netGain)}` : '$0';
+
     let message = ''
     if (result === 'player') {
-      message = currentPlayerFromState.hand.isBlackjack ? 'Blackjack! You win!' : 'You win!'
+      if (currentPlayerFromState.hand.isBlackjack) {
+        message = `🎉 Blackjack! You win ${gainText}!`
+      } else {
+        message = `✅ You win ${gainText}!`
+      }
     } else if (result === 'dealer') {
-      message = currentPlayerFromState.hand.isBusted ? 'Busted! You lose!' : 'Dealer wins!'
+      if (currentPlayerFromState.hand.isBusted) {
+        message = `💥 Busted! You lose ${gainText}!`
+      } else {
+        message = `❌ Dealer wins! You lose ${gainText}!`
+      }
     } else {
-      message = 'Push! It\'s a tie!'
+      message = `🤝 Push! It's a tie ${gainText}!`
     }
 
     setGameMessage(message)
