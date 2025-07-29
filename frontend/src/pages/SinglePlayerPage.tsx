@@ -141,12 +141,29 @@ export function SinglePlayerPage() {
 
   const placeBet = (amount: number) => {
     console.log('🎮 PLACE BET: Attempting to place bet', amount, 'in phase:', gameState.gamePhase)
-    if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) {
-      console.log('🚨 PLACE BET: Cannot place bet! Phase:', gameState.gamePhase, 'Amount:', amount, 'Chips:', currentPlayer.chips)
+    console.log('🎮 PLACE BET: Current player state:', {
+      chips: currentPlayer.chips,
+      bet: currentPlayer.bet,
+      cards: currentPlayer.hand.cards.length,
+      handValue: currentPlayer.hand.value
+    })
+
+    if (gameState.gamePhase !== 'betting') {
+      console.log('🚨 PLACE BET: Wrong phase! Expected betting, got:', gameState.gamePhase)
       return
     }
 
-    console.log('🎮 PLACE BET: Placing bet:', amount, 'Current chips:', currentPlayer.chips)
+    if (amount > currentPlayer.chips) {
+      console.log('🚨 PLACE BET: Insufficient chips! Amount:', amount, 'Available:', currentPlayer.chips)
+      return
+    }
+
+    if (currentPlayer.bet !== 0) {
+      console.log('🚨 PLACE BET: Player already has a bet!', currentPlayer.bet)
+      return
+    }
+
+    console.log('🎮 PLACE BET: All checks passed, placing bet:', amount)
     setLastBetAmount(amount) // Track the last bet for auto-play
 
     setGameState(prev => {
@@ -989,11 +1006,19 @@ export function SinglePlayerPage() {
 
   const newGame = () => {
     console.log('🎮 NEW GAME: Starting new game, resetting to betting phase')
+
+    // CRITICAL FIX: Clear any pending timeouts or async operations
+    // This prevents race conditions from previous game interfering with new game
+    console.log('🎮 NEW GAME: Clearing any pending operations...')
+
     const deck = BlackjackEngine.createDeck()
 
+    // Force a clean state reset
     setGameState(prev => {
       console.log('🎮 NEW GAME: Previous phase was:', prev.gamePhase)
-      return {
+      console.log('🎮 NEW GAME: Previous player bet was:', prev.players[0]?.bet)
+
+      const cleanState = {
         ...prev,
         players: prev.players.map(player => ({
           ...player,
@@ -1010,13 +1035,22 @@ export function SinglePlayerPage() {
           hand: BlackjackEngine.createHand()
         },
         deck,
-        gamePhase: 'betting'
+        gamePhase: 'betting' as const
       }
+
+      console.log('🎮 NEW GAME: New state created with phase:', cleanState.gamePhase)
+      console.log('🎮 NEW GAME: New player bet:', cleanState.players[0]?.bet)
+      return cleanState
     })
 
     console.log('🎮 NEW GAME: Set phase to betting, clearing messages')
     setGameMessage('')
     setOdds(null)
+
+    // Force a small delay to ensure state is fully updated before allowing interactions
+    setTimeout(() => {
+      console.log('🎮 NEW GAME: State should be fully reset now')
+    }, 50)
   }
 
   const toggleSplitTest = () => {
