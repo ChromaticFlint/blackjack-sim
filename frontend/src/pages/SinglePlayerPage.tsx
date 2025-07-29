@@ -140,9 +140,13 @@ export function SinglePlayerPage() {
   }, [gameState, currentPlayer])
 
   const placeBet = (amount: number) => {
-    if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) return
+    console.log('🎮 PLACE BET: Attempting to place bet', amount, 'in phase:', gameState.gamePhase)
+    if (gameState.gamePhase !== 'betting' || amount > currentPlayer.chips) {
+      console.log('🚨 PLACE BET: Cannot place bet! Phase:', gameState.gamePhase, 'Amount:', amount, 'Chips:', currentPlayer.chips)
+      return
+    }
 
-    console.log('Placing bet:', amount, 'Current chips:', currentPlayer.chips)
+    console.log('🎮 PLACE BET: Placing bet:', amount, 'Current chips:', currentPlayer.chips)
     setLastBetAmount(amount) // Track the last bet for auto-play
 
     setGameState(prev => {
@@ -156,16 +160,21 @@ export function SinglePlayerPage() {
         gamePhase: 'dealing' as const
       }
 
-      console.log('After bet placement - New chips:', updatedState.players[0].chips)
+      console.log('🎮 PLACE BET: Set phase to dealing, new chips:', updatedState.players[0].chips)
 
       // Auto-deal after betting using the updated state
-      setTimeout(() => dealInitialCardsWithState(updatedState), 500)
+      console.log('🎮 PLACE BET: Scheduling dealInitialCardsWithState in 500ms...')
+      setTimeout(() => {
+        console.log('🎮 PLACE BET: Timeout fired, calling dealInitialCardsWithState')
+        dealInitialCardsWithState(updatedState)
+      }, 500)
 
       return updatedState
     })
   }
 
   const dealInitialCardsWithState = (currentGameState: typeof gameState) => {
+    console.log('🎮 DEAL INITIAL CARDS: Function called with state phase:', currentGameState.gamePhase)
     let newDeck = [...currentGameState.deck]
     // Use the passed state to ensure we have the correct state with bet deducted
     let newPlayer = { ...currentGameState.players[currentGameState.currentPlayerIndex] }
