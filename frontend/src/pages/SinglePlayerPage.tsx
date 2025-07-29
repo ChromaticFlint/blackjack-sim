@@ -496,9 +496,17 @@ export function SinglePlayerPage() {
   }
 
   const endGame = (finalDealer?: Player, bustedPlayer?: Player) => {
+    console.log('🎮 END GAME: Called with finalDealer:', !!finalDealer, 'bustedPlayer:', !!bustedPlayer)
+    console.log('🎮 END GAME: Current gameState.gamePhase:', gameState.gamePhase)
+    console.log('🎮 END GAME: Current gameState.players[0].bet:', gameState.players[0]?.bet)
+    console.log('🎮 END GAME: Current gameState.players[0].chips:', gameState.players[0]?.chips)
+
     const dealerToUse = finalDealer || gameState.dealer
     // CRITICAL FIX: Use busted player if provided, otherwise get from state
     const currentPlayerFromState = bustedPlayer || gameState.players[gameState.currentPlayerIndex]
+
+    console.log('🎮 END GAME: Using player with bet:', currentPlayerFromState.bet, 'chips:', currentPlayerFromState.chips)
+    console.log('🎮 END GAME: Player hand cards:', currentPlayerFromState.hand.cards.length)
 
     // Debug logging
     console.log('=== GAME END DEBUG ===')
