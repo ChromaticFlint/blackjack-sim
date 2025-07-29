@@ -111,15 +111,30 @@ export function SinglePlayerPage() {
   }, [currentPlayer.chips])
 
   useEffect(() => {
+    console.log('🎯 ODDS CALCULATION USEEFFECT TRIGGERED:', {
+      gamePhase: gameState.gamePhase,
+      hasCurrentPlayer: !!currentPlayer,
+      dealerCards: gameState.dealer.hand.cards.length,
+      playerCards: currentPlayer?.hand.cards.length || 0,
+      autoPlay: autoPlay
+    })
+
     if (gameState.gamePhase === 'playing' && currentPlayer && gameState.dealer.hand.cards.length > 0) {
       const dealerUpCard = gameState.dealer.hand.cards[0]
+      console.log('🎯 Calculating odds for:', {
+        playerValue: currentPlayer.hand.value,
+        dealerUpCard: dealerUpCard.rank,
+        deckSize: gameState.deck.length
+      })
       const calculatedOdds = BlackjackEngine.calculateOdds(
         currentPlayer.hand,
         dealerUpCard,
         gameState.deck
       )
       setOdds(calculatedOdds)
+      console.log('🎯 Odds set successfully')
     } else {
+      console.log('🎯 Clearing odds - conditions not met')
       setOdds(null)
     }
   }, [gameState, currentPlayer])
@@ -864,7 +879,6 @@ export function SinglePlayerPage() {
           // Reset other state outside of setGameState
           setTimeout(() => {
             setGameMessage('')
-            setOdds(null)
             setAutoPlayCountdown(0)
 
             // Check for blackjacks after state is set
@@ -875,6 +889,17 @@ export function SinglePlayerPage() {
                 gamePhase: 'game-over' as const
               }))
               setTimeout(() => endGame(newDealer), 1000)
+            } else {
+              // Calculate odds for the new auto-play hand
+              console.log('🎯 Auto-play: Calculating odds for new hand...')
+              const dealerUpCard = newDealer.hand.cards[0]
+              const calculatedOdds = BlackjackEngine.calculateOdds(
+                newPlayer.hand,
+                dealerUpCard,
+                newDeck
+              )
+              setOdds(calculatedOdds)
+              console.log('🎯 Auto-play: Odds calculated:', calculatedOdds)
             }
           }, 100) // Small delay to ensure state is updated
 
