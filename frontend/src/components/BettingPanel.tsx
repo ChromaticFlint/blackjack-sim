@@ -57,8 +57,8 @@ export function BettingPanel({
   }
 
   return (
-    <div className="betting-panel">
-      <h3>Betting</h3>
+    <div className="panel-section betting-panel">
+      <h3 className="panel-title">Betting</h3>
       
       <div className="chips-info">
         <div className="chips-total">
@@ -158,8 +158,8 @@ export function BettingPanel({
       )}
 
       {/* Auto-Play Controls */}
-      <div className="auto-play-section">
-        <h4>Auto-Play</h4>
+      <div className="panel-section auto-play">
+        <h4 className="panel-title">Auto-Play</h4>
         <label className="auto-play-checkbox">
           <input
             type="checkbox"

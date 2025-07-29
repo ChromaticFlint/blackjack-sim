@@ -17,19 +17,23 @@ interface GameControlsPanelProps {
   sessionStats?: SessionStats
   onResetSession?: () => void
   gamePhase: string
+  onTestSplit?: () => void
+  splitTestMode?: boolean
 }
 
 export function GameControlsPanel({
   sessionStats,
   onResetSession,
-  gamePhase
+  gamePhase,
+  onTestSplit,
+  splitTestMode = false
 }: GameControlsPanelProps) {
   return (
     <div className="game-controls-panel">
 
       {/* Session Statistics */}
       {sessionStats && (
-        <div className="panel-section">
+        <div className="panel-section session-stats">
           <h3 className="panel-title">Session Stats</h3>
           <div className="stats-grid">
             <div className="stat-item">
@@ -82,6 +86,24 @@ export function GameControlsPanel({
         </button>
         <div className="reset-info">
           Resets stats and restores starting chips
+        </div>
+      </div>
+
+      {/* Split Testing */}
+      <div className="panel-section">
+        <h3 className="panel-title">Split Testing</h3>
+        <button
+          className={`btn ${splitTestMode ? 'btn-warning' : 'btn-secondary'} test-split-btn`}
+          onClick={onTestSplit}
+          disabled={gamePhase === 'playing'}
+        >
+          {splitTestMode ? '🔧 Split Test: ON' : '🔧 Split Test: OFF'}
+        </button>
+        <div className="test-info">
+          {splitTestMode
+            ? 'Next hand will be splittable (pairs)'
+            : 'Click to force splittable hands'
+          }
         </div>
       </div>
 

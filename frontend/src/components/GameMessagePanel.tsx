@@ -20,6 +20,16 @@ export function GameMessagePanel({ message, gamePhase }: GameMessagePanelProps) 
       return 'push'
     }
     if (lowerMsg.includes('split')) {
+      // Determine split result type based on emojis/content
+      if (lowerMsg.includes('🎉') || (lowerMsg.includes('+$') && !lowerMsg.includes('-$'))) {
+        return 'split-win'
+      }
+      if (lowerMsg.includes('💸') || (lowerMsg.includes('-$') && !lowerMsg.includes('+$'))) {
+        return 'split-lose'
+      }
+      if (lowerMsg.includes('🤝')) {
+        return 'split-push'
+      }
       return 'split'
     }
     if (lowerMsg.includes('auto-play')) {
@@ -32,9 +42,9 @@ export function GameMessagePanel({ message, gamePhase }: GameMessagePanelProps) 
   const messageType = getMessageType(message)
 
   return (
-    <div className="game-message-panel">
+    <div className="panel-section game-status">
       <div className="message-panel-header">
-        <h3>Game Status</h3>
+        <h3 className="panel-title">Game Status</h3>
       </div>
       
       <div className="message-panel-content">

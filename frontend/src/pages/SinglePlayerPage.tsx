@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BlackjackEngine } from '../utils/gameEngine'
-import type { Player, GameState, BlackjackOdds } from '../types/game'
+import type { Player, GameState, BlackjackOdds, Card } from '../types/game'
 import { GameTable } from '../components/GameTable'
 import { PlayerHand } from '../components/PlayerHand'
 import { DealerHand } from '../components/DealerHand'
@@ -49,6 +49,7 @@ export function SinglePlayerPage() {
   const [autoPlay, setAutoPlay] = useState(false)
   const [lastBetAmount, setLastBetAmount] = useState(0)
   const [autoPlayCountdown, setAutoPlayCountdown] = useState(0)
+  const [splitTestMode, setSplitTestMode] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
   // Check if mobile on mount and resize
@@ -157,14 +158,21 @@ export function SinglePlayerPage() {
 
     console.log('Deal Initial Cards With State - Player chips:', newPlayer.chips, 'bet:', newPlayer.bet)
 
-    // Deal two cards to player
-    const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
-    newDeck = playerCard1.newDeck
-    newPlayer.hand = playerCard1.newHand
+    // Deal two cards to player (use split test mode if enabled)
+    if (splitTestMode) {
+      const { newDeck: deckAfterSplit, playerCards } = dealSplittableHand(newDeck)
+      newDeck = deckAfterSplit
+      newPlayer.hand = BlackjackEngine.createHand(playerCards)
+      console.log('🔧 SPLIT TEST: Player dealt', playerCards.map(c => c.rank).join(', '))
+    } else {
+      const playerCard1 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+      newDeck = playerCard1.newDeck
+      newPlayer.hand = playerCard1.newHand
 
-    const playerCard2 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
-    newDeck = playerCard2.newDeck
-    newPlayer.hand = playerCard2.newHand
+      const playerCard2 = BlackjackEngine.dealCard(newDeck, newPlayer.hand)
+      newDeck = playerCard2.newDeck
+      newPlayer.hand = playerCard2.newHand
+    }
 
     // Deal two cards to dealer (second card face down)
     const dealerCard1 = BlackjackEngine.dealCard(newDeck, newDealer.hand)
@@ -265,8 +273,13 @@ export function SinglePlayerPage() {
         console.log('Player hand value:', result.newHand.value)
         console.log('Player cards:', result.newHand.cards.map(c => c.rank))
         console.log('Player isBusted:', result.newHand.isBusted)
-        // Don't pass dealer state - let endGame get current state
-        setTimeout(() => endGame(), 1000)
+
+        // CRITICAL FIX: Pass the busted player directly to avoid state timing issues
+        const bustedPlayer = {
+          ...currentPlayer,
+          hand: result.newHand
+        }
+        setTimeout(() => endGame(undefined, bustedPlayer), 1000)
       } else {
         console.log('Player did not bust, continuing...')
       }
@@ -431,21 +444,25 @@ export function SinglePlayerPage() {
     setTimeout(() => endGame(newDealer), 1000)
   }
 
-  const endGame = (finalDealer?: Player) => {
+  const endGame = (finalDealer?: Player, bustedPlayer?: Player) => {
     const dealerToUse = finalDealer || gameState.dealer
-    // CRITICAL FIX: Get current player from current game state, not closure
-    const currentPlayerFromState = gameState.players[gameState.currentPlayerIndex]
+    // CRITICAL FIX: Use busted player if provided, otherwise get from state
+    const currentPlayerFromState = bustedPlayer || gameState.players[gameState.currentPlayerIndex]
 
     // Debug logging
     console.log('=== GAME END DEBUG ===')
     console.log('endGame called with finalDealer:', finalDealer ? 'YES' : 'NO')
+    console.log('endGame called with bustedPlayer:', bustedPlayer ? 'YES' : 'NO')
     console.log('🔍 BUST INVESTIGATION:')
-    console.log('currentPlayer from closure vs state:', {
+    console.log('Player source used:', bustedPlayer ? 'BUSTED_PLAYER_PARAM' : 'GAME_STATE')
+    console.log('currentPlayer from closure vs state vs busted:', {
       closureValue: currentPlayer.hand.value,
       closureBusted: currentPlayer.hand.isBusted,
-      stateValue: currentPlayerFromState.hand.value,
-      stateBusted: currentPlayerFromState.hand.isBusted,
-      stateCards: currentPlayerFromState.hand.cards.map(c => c.rank)
+      stateValue: gameState.players[gameState.currentPlayerIndex].hand.value,
+      stateBusted: gameState.players[gameState.currentPlayerIndex].hand.isBusted,
+      usedValue: currentPlayerFromState.hand.value,
+      usedBusted: currentPlayerFromState.hand.isBusted,
+      usedCards: currentPlayerFromState.hand.cards.map(c => c.rank)
     })
     console.log('Dealer state:', {
       value: dealerToUse.hand.value,
@@ -467,20 +484,50 @@ export function SinglePlayerPage() {
       console.log('Processing split hands...')
       let totalPayout = 0;
       let results: string[] = [];
+      let detailedResults: Array<{
+        handNumber: number;
+        result: string;
+        value: number;
+        payout: number;
+        netGain: number;
+        status: 'win' | 'lose' | 'push';
+      }> = [];
 
       for (let i = 0; i < currentPlayerFromState.splitHands.length; i++) {
         const splitHand = currentPlayerFromState.splitHands[i];
         const handPayout = BlackjackEngine.calculatePayout(currentPlayerFromState.bet, splitHand, dealerToUse.hand);
         const handResult = BlackjackEngine.determineWinner(splitHand, dealerToUse.hand);
+        const netGain = handPayout - currentPlayerFromState.bet;
 
         totalPayout += handPayout;
-        results.push(`Hand ${i + 1}: ${handResult} (${splitHand.value})`);
+
+        // Determine status for coloring
+        let status: 'win' | 'lose' | 'push';
+        if (handResult === 'player') status = 'win';
+        else if (handResult === 'dealer') status = 'lose';
+        else status = 'push';
+
+        // Create detailed result object
+        detailedResults.push({
+          handNumber: i + 1,
+          result: handResult,
+          value: splitHand.value,
+          payout: handPayout,
+          netGain,
+          status
+        });
+
+        // Create simple text result for backwards compatibility
+        const gainText = netGain > 0 ? `+$${netGain}` : netGain < 0 ? `-$${Math.abs(netGain)}` : '$0';
+        results.push(`Hand ${i + 1}: ${handResult} (${splitHand.value}) ${gainText}`);
 
         console.log(`Split Hand ${i + 1}:`, {
           cards: splitHand.cards.map(c => c.rank),
           value: splitHand.value,
           result: handResult,
-          payout: handPayout
+          payout: handPayout,
+          netGain,
+          status
         });
       }
 
@@ -525,7 +572,20 @@ export function SinglePlayerPage() {
       setSessionStats(newStats);
       localStorage.setItem('blackjack-session', JSON.stringify(newStats));
 
-      setGameMessage(`Split complete! ${results.join(', ')}`);
+      // Create enhanced split results message
+      const totalNetGain = totalPayout - (currentPlayerFromState.bet * currentPlayerFromState.splitHands.length);
+      const overallStatus = totalNetGain > 0 ? 'win' : totalNetGain < 0 ? 'lose' : 'push';
+
+      const splitSummary = detailedResults.map(hand => {
+        const statusEmoji = hand.status === 'win' ? '✅' : hand.status === 'lose' ? '❌' : '🟡';
+        const gainText = hand.netGain > 0 ? `+$${hand.netGain}` : hand.netGain < 0 ? `-$${Math.abs(hand.netGain)}` : '$0';
+        return `${statusEmoji} Hand ${hand.handNumber}: ${hand.value} (${gainText})`;
+      }).join(' | ');
+
+      const totalGainText = totalNetGain > 0 ? `+$${totalNetGain}` : totalNetGain < 0 ? `-$${Math.abs(totalNetGain)}` : '$0';
+      const overallEmoji = overallStatus === 'win' ? '🎉' : overallStatus === 'lose' ? '💸' : '🤝';
+
+      setGameMessage(`${overallEmoji} Split Complete! ${splitSummary} | Total: ${totalGainText}`);
 
       // Clear split hands and reset to normal play
       setGameState(prev => ({
@@ -635,13 +695,18 @@ export function SinglePlayerPage() {
     const dealerHasBlackjack = dealerToUse.hand.isBlackjack
 
     // Debug logging
-    console.log('Blackjack Detection:', {
+    console.log('🃏 BLACKJACK DETECTION DEBUG:', {
       playerCards: currentPlayerFromState.hand.cards.length,
       playerValue: currentPlayerFromState.hand.value,
       playerHasBlackjack,
+      playerCardRanks: currentPlayerFromState.hand.cards.map(c => c.rank),
       dealerCards: dealerToUse.hand.cards.length,
       dealerValue: dealerToUse.hand.value,
-      dealerHasBlackjack
+      dealerHasBlackjack,
+      dealerCardRanks: dealerToUse.hand.cards.map(c => c.rank),
+      result: result,
+      willIncrementPlayerBJ: playerHasBlackjack ? 'YES' : 'NO',
+      willIncrementDealerBJ: dealerHasBlackjack ? 'YES' : 'NO'
     })
 
     const newStats = {
@@ -864,6 +929,40 @@ export function SinglePlayerPage() {
     setOdds(null)
   }
 
+  const toggleSplitTest = () => {
+    setSplitTestMode(prev => !prev)
+    console.log('Split test mode toggled:', !splitTestMode)
+  }
+
+  const dealSplittableHand = (deck: Card[]): { newDeck: Card[], playerCards: Card[] } => {
+    // Find pairs in the deck for testing
+    let newDeck = [...deck]
+
+    // Try to find a pair (prefer 8s for testing as they're commonly split)
+    for (const rank of ['8', 'A', '7', '9', '10', 'K', 'Q', 'J', '6', '5', '4', '3', '2']) {
+      const cardsOfRank = newDeck.filter(card => card.rank === rank)
+      if (cardsOfRank.length >= 2) {
+        // Remove two cards of the same rank
+        const card1 = cardsOfRank[0]
+        const card2 = cardsOfRank[1]
+
+        newDeck = newDeck.filter(card =>
+          !(card.rank === rank && card.suit === card1.suit) &&
+          !(card.rank === rank && card.suit === card2.suit)
+        )
+
+        console.log('🔧 SPLIT TEST: Dealing pair of', rank)
+        return { newDeck, playerCards: [card1, card2] }
+      }
+    }
+
+    // Fallback: deal normally if no pairs available
+    console.warn('🔧 SPLIT TEST: No pairs available, dealing normally')
+    const card1 = newDeck.pop()!
+    const card2 = newDeck.pop()!
+    return { newDeck, playerCards: [card1, card2] }
+  }
+
   const resetSession = () => {
     const startingChips = 1000 // Always reset to 1000 chips
 
@@ -912,6 +1011,8 @@ export function SinglePlayerPage() {
                 sessionStats={sessionStats}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
+                onTestSplit={toggleSplitTest}
+                splitTestMode={splitTestMode}
               />
             </div>
             <div className="mobile-betting-section">
@@ -971,6 +1072,8 @@ export function SinglePlayerPage() {
                 sessionStats={sessionStats}
                 onResetSession={resetSession}
                 gamePhase={gameState.gamePhase}
+                onTestSplit={toggleSplitTest}
+                splitTestMode={splitTestMode}
               />
             </div>
 
