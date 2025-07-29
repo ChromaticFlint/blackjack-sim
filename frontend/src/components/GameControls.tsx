@@ -24,7 +24,7 @@ export function GameControls({
   onStand,
   onDoubleDown,
   onSplit,
-  onNewGame: _onNewGame,
+  onNewGame,
   odds
 }: GameControlsProps) {
   const formatPercentage = (value: number) => `${value.toFixed(0)}%` // Value is already a percentage
@@ -56,6 +56,35 @@ export function GameControls({
     return (
       <div className="game-controls">
         <div className="game-over-message">Game Over</div>
+        <button
+          className="btn btn-primary new-game-btn"
+          onClick={onNewGame}
+        >
+          New Game
+        </button>
+      </div>
+    )
+  }
+
+  // Fallback for unexpected game phases - show New Game button
+  if (gamePhase !== 'playing') {
+    console.warn('🚨 GameControls: Unexpected game phase:', gamePhase)
+    return (
+      <div className="game-controls">
+        <div className="controls-message">
+          {gamePhase === 'betting' ? 'Place your bet to start' :
+           gamePhase === 'dealing' ? 'Dealing cards...' :
+           gamePhase === 'dealer-turn' ? 'Dealer is playing...' :
+           'Unexpected game state'}
+        </div>
+        {gamePhase !== 'betting' && gamePhase !== 'dealing' && gamePhase !== 'dealer-turn' && (
+          <button
+            className="btn btn-primary new-game-btn"
+            onClick={onNewGame}
+          >
+            New Game
+          </button>
+        )}
       </div>
     )
   }

@@ -198,6 +198,7 @@ export function SinglePlayerPage() {
     newDeck = dealerCard2.newDeck
     newDealer.hand = dealerCard2.newHand
 
+    console.log('🎮 DEAL CARDS: Setting phase to playing')
     setGameState(prev => ({
       ...prev,
       players: [newPlayer],
@@ -205,6 +206,7 @@ export function SinglePlayerPage() {
       deck: newDeck,
       gamePhase: 'playing' as const
     }))
+    console.log('🎮 DEAL CARDS: Phase set to playing, buttons should appear')
 
     // Check for blackjacks
     if (newPlayer.hand.isBlackjack || newDealer.hand.isBlackjack) {
@@ -969,28 +971,33 @@ export function SinglePlayerPage() {
   }
 
   const newGame = () => {
+    console.log('🎮 NEW GAME: Starting new game, resetting to betting phase')
     const deck = BlackjackEngine.createDeck()
-    
-    setGameState(prev => ({
-      ...prev,
-      players: prev.players.map(player => ({
-        ...player,
-        hand: BlackjackEngine.createHand(),
-        bet: 0,
-        hasDoubledDown: false,
-        hasStood: false,
-        splitHands: undefined,
-        currentHandIndex: undefined,
-        finalSplitHands: undefined // Clear preserved split hands
-      })),
-      dealer: {
-        ...prev.dealer,
-        hand: BlackjackEngine.createHand()
-      },
-      deck,
-      gamePhase: 'betting'
-    }))
 
+    setGameState(prev => {
+      console.log('🎮 NEW GAME: Previous phase was:', prev.gamePhase)
+      return {
+        ...prev,
+        players: prev.players.map(player => ({
+          ...player,
+          hand: BlackjackEngine.createHand(),
+          bet: 0,
+          hasDoubledDown: false,
+          hasStood: false,
+          splitHands: undefined,
+          currentHandIndex: undefined,
+          finalSplitHands: undefined // Clear preserved split hands
+        })),
+        dealer: {
+          ...prev.dealer,
+          hand: BlackjackEngine.createHand()
+        },
+        deck,
+        gamePhase: 'betting'
+      }
+    })
+
+    console.log('🎮 NEW GAME: Set phase to betting, clearing messages')
     setGameMessage('')
     setOdds(null)
   }
