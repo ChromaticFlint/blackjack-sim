@@ -531,9 +531,18 @@ export function SinglePlayerPage() {
     console.log('🎮 END GAME: Current gameState.players[0].bet:', gameState.players[0]?.bet)
     console.log('🎮 END GAME: Current gameState.players[0].chips:', gameState.players[0]?.chips)
 
-    const dealerToUse = finalDealer || gameState.dealer
-    // CRITICAL FIX: Use busted player if provided, otherwise get from state
+    // CRITICAL FIX: Prevent endGame from running with invalid state
     const currentPlayerFromState = bustedPlayer || gameState.players[gameState.currentPlayerIndex]
+
+    // Safety check: Don't end game if player has no cards or bet (invalid state)
+    if (!bustedPlayer && (currentPlayerFromState.hand.cards.length === 0 || currentPlayerFromState.bet === 0)) {
+      console.log('🚨 END GAME: BLOCKED - Invalid player state detected!')
+      console.log('🚨 END GAME: Player cards:', currentPlayerFromState.hand.cards.length, 'bet:', currentPlayerFromState.bet)
+      console.log('🚨 END GAME: This appears to be a race condition - ignoring endGame call')
+      return
+    }
+
+    const dealerToUse = finalDealer || gameState.dealer
 
     console.log('🎮 END GAME: Using player with bet:', currentPlayerFromState.bet, 'chips:', currentPlayerFromState.chips)
     console.log('🎮 END GAME: Player hand cards:', currentPlayerFromState.hand.cards.length)
