@@ -7,26 +7,34 @@ interface PlayerHandProps {
 }
 
 export function PlayerHand({ player, isActive }: PlayerHandProps) {
-  // Check if player has split hands
+  // Check if player has split hands (active or final)
   const hasSplitHands = player.splitHands && player.splitHands.length > 0;
+  const hasFinalSplitHands = player.finalSplitHands && player.finalSplitHands.length > 0;
   const currentHandIndex = player.currentHandIndex ?? 0;
 
-  if (hasSplitHands) {
+  // Display split hands (either active or final)
+  if (hasSplitHands || hasFinalSplitHands) {
+    const handsToDisplay = player.splitHands || player.finalSplitHands || [];
+    const isGameOver = !player.splitHands && player.finalSplitHands;
     // Display split hands
     return (
       <div className={`player-hand ${isActive ? 'active' : ''}`}>
         <div className="player-info">
           <div className="player-name">{player.name}</div>
           <div className="split-hands-header">
-            <span className="split-indicator">SPLIT HANDS</span>
-            <span className="current-hand-indicator">
-              Playing Hand {currentHandIndex + 1} of {player.splitHands?.length || 0}
+            <span className="split-indicator">
+              {isGameOver ? 'FINAL SPLIT HANDS' : 'SPLIT HANDS'}
             </span>
+            {!isGameOver && (
+              <span className="current-hand-indicator">
+                Playing Hand {currentHandIndex + 1} of {handsToDisplay.length}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="split-hands-container">
-          {player.splitHands?.map((hand, index) => (
+          {handsToDisplay.map((hand, index) => (
             <div
               key={`split-hand-${index}`}
               className={`split-hand ${index === currentHandIndex ? 'current-hand' : 'waiting-hand'}`}

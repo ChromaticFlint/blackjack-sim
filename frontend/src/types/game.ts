@@ -23,6 +23,7 @@ export interface Player {
   hasDoubledDown?: boolean;
   splitHands?: Hand[];
   currentHandIndex?: number;
+  finalSplitHands?: Hand[]; // Keep split hands visible after game ends
 }
 
 export interface GameState {

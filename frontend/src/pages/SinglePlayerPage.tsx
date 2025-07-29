@@ -602,7 +602,7 @@ export function SinglePlayerPage() {
 
       setGameMessage(`${overallEmoji} Split Complete! ${splitSummary} | Total: ${totalGainText}`);
 
-      // Clear split hands and reset to normal play
+      // PRESERVE split hands for display and reset to normal play
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(player =>
@@ -610,7 +610,8 @@ export function SinglePlayerPage() {
             ? {
                 ...player,
                 chips: newChips,
-                splitHands: undefined,
+                finalSplitHands: currentPlayerFromState.splitHands, // Keep for display
+                splitHands: undefined, // Clear active split hands
                 currentHandIndex: undefined,
                 hand: BlackjackEngine.createHand() // Reset to empty hand
               }
@@ -940,7 +941,10 @@ export function SinglePlayerPage() {
         hand: BlackjackEngine.createHand(),
         bet: 0,
         hasDoubledDown: false,
-        hasStood: false
+        hasStood: false,
+        splitHands: undefined,
+        currentHandIndex: undefined,
+        finalSplitHands: undefined // Clear preserved split hands
       })),
       dealer: {
         ...prev.dealer,
